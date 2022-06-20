@@ -1,15 +1,15 @@
 {
-	"name": "netliva/reusable-template",
+	"name": "netliva/symfony-fast-search-table",
 	"license": "MIT",
 	"type": "library",
-	"description": "Netliva Xxx Library",
+	"description": "Symfony Fast Search Table Library",
 	"autoload": {
 		"psr-4": {
-			"Netliva\\XxxBundle\\": "src/"
+			"Netliva\\SymfonyFastSearchBundle\\": "src/"
 		}
 	},
 	"require": {
-		"php": ">=5.3.3",
+		"php": ">=7.2",
 		"symfony/framework-bundle": "~2.7|~3.0|~4.0"
 	},
 	"minimum-stability": "stable"
