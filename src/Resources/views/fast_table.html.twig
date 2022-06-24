@@ -1,0 +1,222 @@
+<script src="https://unpkg.com/vue@3"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<div id="fastTableApp_{{ key }}">
+	<form class="d-flex align-items-center justify-content-center pad10A p-3" @submit="postFilter">
+		{% for filterKey, filterInfo in entityInfos.filters %}
+			<div class="d-flex align-items-center justify-content-center">
+				<strong class="nowrap">{{ filterInfo.title }} :</strong>
+				{% if filterInfo.type == 'text' %}
+					<input class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}">
+				{% elseif filterInfo.type == 'select' %}
+					<select class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}">
+						<option value="">Farketmez</option>
+						{% for key, val in (options.custom_filter_options[filterKey] ?? filterInfo.options) %}
+							<option value="{{ key }}">{{ val }}</option>
+						{% endfor %}
+					</select>
+				{% endif %}
+			</div>
+		{% endfor %}
+		{% if entityInfos.filters|length %}
+			<div>
+				<button class="btn btn-success" @click="postFilter">Filtrele</button>
+			</div>
+		{% endif %}
+		<div>
+			<strong>Toplam Kayıt :</strong>
+			[[total]]
+		</div>
+		<div>
+			<button class="btn btn-secondary btn-xs" style="height:34px; line-height:1.2;" @click="clearCache">
+				Ön Belleği<br>Temizle
+			</button>
+		</div>
+	</form>
+
+
+	<table class="{{ options.table_class }}">
+		<thead>
+			<tr :class="'nl-sort-'+sort_direction">
+				{% for column in options.table_columns %}
+					<th {% if column.releated_field is defined and column.releated_field %} class="nl-sort" :class="{'nl-sort-active': sort_field=='{{ column.releated_field }}'}" @click="sortTable('{{ column.releated_field }}')"{% endif %}>
+						<span>{{ column.title }}</span>
+					</th>
+				{% endfor %}
+			</tr>
+		</thead>
+		<tbody>
+			{#  ---  Veriler Yüklenirken  ---  #}
+			<template v-if="entities.length==0 && in_action">
+				<tr v-for="i in 10">
+					{% for i in 1..(options.table_columns|length) %}
+						<td>
+							<div class="placeholder-item"></div>
+						</td>
+					{% endfor %}
+				</tr>
+			</template>
+
+			{#  ---  Kayıt Bulunamadığında  ---  #}
+			<template v-if="entities.length==0 && !in_action">
+				<tr>
+					<td colspan="{{ options.table_columns|length }}">
+						<div style="padding: 50px; text-align: center;">
+							Hiç Kayıt Bulunamadı!
+						</div>
+					</td>
+				</tr>
+			</template>
+
+			{#  ---  Kayıtların Listelenmesi  ---  #}
+			<template v-for="{{ options.record_variable_name }} in entities">
+				<tr :id="'fastTableApp_{{ key }}_'+{{  options.record_variable_name  }}.id" >
+					{{ options.table_tbody_cells_vue_template|raw }}
+				</tr>
+			</template>
+
+		</tbody>
+	</table>
+
+	<div v-if="entities.length>0 && loaded_all_records">
+		<div style="padding: 50px; text-align: center;">
+			Tüm Kayıtlar Listelendi!
+		</div>
+	</div>
+
+</div>
+
+
+<style>
+	#fastTableApp_{{ key }} thead th.nl-sort { cursor: pointer; white-space: nowrap; }
+	#fastTableApp_{{ key }} thead th.nl-sort span:before,
+	#fastTableApp_{{ key }} thead th.nl-sort span:after {border: 4px solid transparent;content: "";display: block;height: 0;right: 5px;top: 50%;position: absolute;width: 0;}
+	#fastTableApp_{{ key }} thead th.nl-sort span:before {border-bottom-color: #666;margin-top: -9px;}
+	#fastTableApp_{{ key }} thead th.nl-sort span:after {border-top-color: #666;margin-top: 1px;}
+	#fastTableApp_{{ key }} thead tr.nl-sort-desc th.nl-sort.nl-sort-active span:after {border-top-color: #3498DB;}
+	#fastTableApp_{{ key }} thead tr.nl-sort-asc th.nl-sort.nl-sort-active span:before {border-bottom-color: #3498DB;}
+	#fastTableApp_{{ key }} thead tr.nl-sort-desc th.nl-sort.nl-sort-active span:before,
+	#fastTableApp_{{ key }} thead tr.nl-sort-asc th.nl-sort.nl-sort-active span:after {display:none;}
+	#fastTableApp_{{ key }} thead th.nl-sort.nl-sort-active span {color: #3498DB;}
+	#fastTableApp_{{ key }} thead th.nl-sort:hover span {color: #36739d;}
+	#fastTableApp_{{ key }} thead th.nl-sort span {display: block;position: relative;padding-right: 25px;}
+	#fastTableApp_{{ key }} form { gap:10px; flex-wrap: wrap; }
+	#fastTableApp_{{ key }} form .d-flex { gap:10px; white-space:nowrap; }
+	.placeholder-item {border-radius: 4px;height: 17px;position: relative;overflow: hidden;background: #e8e8e8;}
+	.placeholder-item::before {content: '';display: block;position: absolute;left: -150px;top: 0;height: 100%;width: 150px;background: linear-gradient(to right, transparent 0%, #f9f9f9 50%, transparent 100%);animation: load 1.5s cubic-bezier(.37,-0.01,.26,1.08) infinite;}
+	@keyframes load { from {left: -150px;} to   {left: 100%;} }
+</style>
+
+<script>
+	const { createApp } = Vue
+	createApp({
+		delimiters: ["[[", "]]"], data ()
+		{
+			return {
+				axiosSource: axios.CancelToken.source(),
+				page: 0,
+				filter_form: {
+					{% for filterKey, filterInfo in entityInfos.filters %}
+						{{ (filterKey~':"",')|raw }}
+					{% endfor %}
+				},
+				entities: [],
+				loaded_all_records: false,
+				in_action: false,
+				sort_direction: '{{ entityInfos.default_sorting_direction }}',
+				sort_field: '{{ entityInfos.default_sort_field }}',
+				total: 0,
+				{% for key, value in options.vue_variables %}
+					{{ (key ~ ':'~ (value|json_encode)~',')|raw }}
+				{% endfor %}
+			}
+		},
+	  	methods:
+		{
+			chackAnotherPages ()
+			{
+				if ((window.innerHeight + window.scrollY + 200) >= document.body.offsetHeight)
+				{
+					this.getRecords();
+				}
+			},
+			resetList () {
+				if (this.axiosSource)
+				{
+					this.axiosSource.cancel('İptal Edildi');
+					this.axiosSource = axios.CancelToken.source();
+				}
+				this.in_action = false;
+				this.loaded_all_records = false;
+				this.total = 0;
+				this.page = 0;
+				this.getRecords();
+			},
+			postFilter (event) {
+				event.preventDefault();
+				this.resetList();
+				return false;
+			},
+			sortTable (targetSortField)
+			{
+				if (this.sort_field == targetSortField)
+					this.sort_direction = this.sort_direction == 'desc' ? 'asc' : 'desc';
+				this.sort_field = targetSortField;
+
+				this.resetList();
+			},
+			clearCache ()
+			{
+				axios
+					.post('{{ path('netliva_fast_search_remove_cache', {'key': key}) }}',)
+					.then( response => this.resetList() );
+			},
+			getRecords ()
+			{
+				console.log('in_action:', this.in_action);
+				if (this.in_action || this.loaded_all_records) return;
+				this.in_action = true;
+
+				if (!this.page){
+					this.entities = [];
+					this.loaded_all_records = false;
+				}
+				this.page++;
+
+				console.log(this.page, '. sayfayı yükle');
+				console.log('filters', JSON.parse(JSON.stringify(this.filter_form)));
+				axios
+					.post(
+						'{{ path('netliva_fast_search_list', {'key': key, 'page': '__PAGE__'}) }}'.replace('__PAGE__', this.page),
+						{
+							filters : JSON.parse(JSON.stringify(this.filter_form)),
+							sort_field: this.sort_field,
+							sort_direction: this.sort_direction,
+						},
+						{ cancelToken: this.axiosSource.token }
+					)
+					.then(response => {
+						this.total = response.data.total;
+
+						if (response.data.records.length > 0)
+							this.entities.push(...response.data.records);
+
+						this.in_action = false;
+						if (response.data.loaded >= response.data.total)
+							this.loaded_all_records = true;
+						else
+							this.chackAnotherPages();
+
+					});
+			},
+			filterSearchBox(val, key) {
+				console.log(val, key);
+			}
+		},
+	  	computed: {},
+		created () { window.addEventListener("scroll", this.chackAnotherPages); },
+		destroyed () { window.removeEventListener("scroll", this.chackAnotherPages); },
+	  	mounted () { this.getRecords(); }
+
+	}).mount('#fastTableApp_{{ key }}')
+</script>

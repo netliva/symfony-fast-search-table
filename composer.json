@@ -9,8 +9,9 @@
 		}
 	},
 	"require": {
-		"php": ">=7.2",
-		"symfony/framework-bundle": "~2.7|~3.0|~4.0"
+		"php": ">=7.0",
+		"ext-intl" : "*",
+		"symfony/framework-bundle": "~2.7"
 	},
 	"minimum-stability": "stable"
 }

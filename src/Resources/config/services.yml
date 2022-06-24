@@ -1,10 +1,20 @@
 services:
-    Netliva\XxxBundle\Services\ExampleServices:
+    Netliva\SymfonyFastSearchBundle\Services\FastSearchServices:
+        class: Netliva\SymfonyFastSearchBundle\Services\FastSearchServices
         public: false
-        arguments: ["@doctrine.orm.entity_manager"]
+        arguments: ["@doctrine.orm.entity_manager", "@service_container"]
         tags:
             - { name: twig.extension }
 
-    netliva.example:
-        alias: Netliva\XxxBundle\Services\ExampleServices
+    netliva_fastSearchServices:
+        alias: Netliva\SymfonyFastSearchBundle\Services\FastSearchServices
         public: true
+
+
+    netliva_fastSearch_cacheClear:
+        class: Netliva\SymfonyFastSearchBundle\EventListener\CacheClearEventListener
+        arguments: [ '@cache_service',  @service_container]
+        tags:
+            - { name: 'doctrine.event_listener', event: 'postPersist', connection: 'default' }
+            - { name: 'doctrine.event_listener', event: 'postUpdate', connection: 'default' }
+            - { name: 'doctrine.event_listener', event: 'preRemove', connection: 'default' }

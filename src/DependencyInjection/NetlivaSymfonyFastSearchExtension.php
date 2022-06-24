@@ -1,6 +1,6 @@
 <?php
 
-namespace Netliva\XxxBundle\DependencyInjection;
+namespace Netliva\SymfonyFastSearchBundle\DependencyInjection;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
@@ -12,7 +12,7 @@ use Symfony\Component\DependencyInjection\Loader;
  *
  * To learn more see {@link http://symfony.com/doc/current/cookbook/bundles/extension.html}
  */
-class NetlivaXxxExtension extends Extension
+class NetlivaSymfonyFastSearchExtension extends Extension
 {
     /**
      * {@inheritdoc}
@@ -21,6 +21,11 @@ class NetlivaXxxExtension extends Extension
     {
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
+
+        $container->setParameter('netliva_fast_search.entities', $config['entities']);
+        $container->setParameter('netliva_fast_search.cache_path', $config['cache_path']);
+        $container->setParameter('netliva_fast_search.default_limit_per_page', $config['default_limit_per_page']);
+        $container->setParameter('netliva_fast_search.default_input_class', $config['default_input_class']);
 
         $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $loader->load('services.yml');
