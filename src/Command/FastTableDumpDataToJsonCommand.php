@@ -63,7 +63,8 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
         $entityInfos = $this->getContainer()->getParameter('netliva_fast_search.entities');
         $cachePath   = $this->getContainer()->getParameter('netliva_fast_search.cache_path');
 
-        if(!is_dir($cachePath)) mkdir($cachePath, 0777);
+        if(!is_dir($cachePath))
+            mkdir($cachePath, 0777, true);
 
         $filePath = $cachePath.'/'.$entKey.'.json';
         if(file_exists($filePath))

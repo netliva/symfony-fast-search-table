@@ -62,6 +62,9 @@ class FastSearchController extends Controller
         foreach ($entities as $entity)
             $data[] = $fss->getEntObj($entity, $entityInfos[$key]['fields']);
 
+        if(!is_dir($cachePath))
+            mkdir($cachePath, 0777, true);
+
         file_put_contents($filePath, json_encode($data));
 
         return new JsonResponse(['success'=>true]);
