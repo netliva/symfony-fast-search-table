@@ -1,19 +1,23 @@
 <div id="fastTableApp_{{ key }}">
 	<form class="d-flex align-items-center justify-content-center pad10A p-3" @submit="postFilter">
 		{% for filterKey, filterInfo in entityInfos.filters %}
-			<div class="d-flex align-items-center justify-content-center">
-				<strong class="nowrap">{{ filterInfo.title }} :</strong>
-				{% if filterInfo.type == 'text' %}
-					<input class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}">
-				{% elseif filterInfo.type == 'select' %}
-					<select class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}">
-						<option value="">Farketmez</option>
-						{% for key, val in (options.custom_filter_options[filterKey] ?? filterInfo.options) %}
-							<option value="{{ key }}">{{ val }}</option>
-						{% endfor %}
-					</select>
-				{% endif %}
-			</div>
+			{% if filterInfo.type == 'hidden' %}
+				<input type="hidden" v-model="filter_form.{{ filterKey }}">
+			{% else %}
+				<div class="d-flex align-items-center justify-content-center">
+					<strong class="nowrap">{{ filterInfo.title }} :</strong>
+					{% if filterInfo.type == 'text' %}
+						<input class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}">
+					{% elseif filterInfo.type == 'select' %}
+						<select class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}">
+							<option value="">Farketmez</option>
+							{% for key, val in (options.custom_filter_options[filterKey] ?? filterInfo.options) %}
+								<option value="{{ key }}">{{ val }}</option>
+							{% endfor %}
+						</select>
+					{% endif %}
+				</div>
+			{% endif %}
 		{% endfor %}
 		{% if entityInfos.filters|length %}
 			<div>
@@ -115,7 +119,7 @@
 				scrool_element: 0,
 				filter_form: {
 					{% for filterKey, filterInfo in entityInfos.filters %}
-						{{ (filterKey~':"",')|raw }}
+						{{ (filterKey~':"' ~ (options.filter_values[filterKey]??'') ~ '",')|raw }}
 					{% endfor %}
 				},
 				entities: [],

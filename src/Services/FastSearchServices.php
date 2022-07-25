@@ -41,6 +41,7 @@ class FastSearchServices extends AbstractExtension
         $options = array_merge([
            'vue_variables'                  => [],
            'custom_filter_options'          => [],
+           'filter_values'                  => [],
            'table_class'                    => 'table table-striped table-hover table-bordered',
            'record_variable_name'           => 'entity',
            'table_thead_cells_vue_template' => '<th>ID</th>',
@@ -72,11 +73,22 @@ class FastSearchServices extends AbstractExtension
                     {
                         if (
                             (
-                                $filterData[$fKey]['type'] == 'text'
-                                && mb_stripos(
-                                    mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $record[$field])),
-                                    mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $fValue)),
-                                    0, "utf-8") !== false
+                                ($filterData[$fKey]['type'] == 'text' || $filterData[$fKey]['type'] == 'hidden')
+                                &&
+                                (
+                                    (
+                                        (!$filterData[$fKey]['exp'] || $filterData[$fKey]['exp'] == 'like') &&
+                                        mb_stripos(
+                                            mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $record[$field])),
+                                            mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $fValue)),
+                                            0, "utf-8") !== false
+                                    )
+                                    ||
+                                    (
+                                        $filterData[$fKey]['exp'] == 'eq' && $record[$field] == $fValue
+                                    )
+                                )
+
                             ) ||
                             ($filterData[$fKey]['type'] == 'select' && $record[$field] == $fValue)
                         )
