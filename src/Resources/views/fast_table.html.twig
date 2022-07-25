@@ -140,7 +140,7 @@
 				if (!this.scrool_element)
 				{
 					var findScrollableElement = function (e){
-						if (e.scrollHeight > e.clientHeight) return e;
+						if (e.scrollHeight > e.clientHeight+5) return e;
 						if (e.parentElement)
 							return findScrollableElement(e.parentElement);
 						return null;
@@ -149,10 +149,20 @@
 					if (e) {
 						this.scrool_element = e;
 						this.scrool_element.addEventListener('scroll', this.chackAnotherPages);
-						// console.log(this.scrool_element);
+						 // console.log(this.scrool_element);
 					}
 				}
-				// if (this.scrool_element) console.log(this.scrool_element.scrollHeight, this.scrool_element.clientHeight+this.scrool_element.scrollTop, this.scrool_element.scrollHeight - (this.scrool_element.clientHeight+this.scrool_element.scrollTop), this.scrool_element.clientHeight, this.scrool_element.scrollTop);
+
+				/*
+				 if (this.scrool_element)
+					 console.log(
+						 'scrollHeight : ', this.scrool_element.scrollHeight,
+						 '\ncurrentBottom : ', this.scrool_element.clientHeight+this.scrool_element.scrollTop,
+						 '\ntoBottom : ', this.scrool_element.scrollHeight - (this.scrool_element.clientHeight+this.scrool_element.scrollTop),
+						 '\nclientHeight : ', this.scrool_element.clientHeight,
+						 '\nscrollTop : ', this.scrool_element.scrollTop
+					 );
+				*/
 
 				if (!this.scrool_element || (this.scrool_element.clientHeight+this.scrool_element.scrollTop + 200) >= this.scrool_element.scrollHeight)
 				{
