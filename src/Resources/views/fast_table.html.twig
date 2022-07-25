@@ -112,6 +112,7 @@
 			return {
 				axiosSource: axios.CancelToken.source(),
 				page: 0,
+				scrool_element: 0,
 				filter_form: {
 					{% for filterKey, filterInfo in entityInfos.filters %}
 						{{ (filterKey~':"",')|raw }}
@@ -132,7 +133,24 @@
 		{
 			chackAnotherPages ()
 			{
-				if ((window.innerHeight + window.scrollY + 200) >= document.body.offsetHeight)
+				if (!this.scrool_element)
+				{
+					var findScrollableElement = function (e){
+						if (e.scrollHeight > e.clientHeight) return e;
+						if (e.parentElement)
+							return findScrollableElement(e.parentElement);
+						return null;
+					}
+					var e = findScrollableElement(document.getElementById('fastTableApp_{{ key }}'));
+					if (e) {
+						this.scrool_element = e;
+						this.scrool_element.addEventListener('scroll', this.chackAnotherPages);
+						// console.log(this.scrool_element);
+					}
+				}
+				// if (this.scrool_element) console.log(this.scrool_element.scrollHeight, this.scrool_element.clientHeight+this.scrool_element.scrollTop, this.scrool_element.scrollHeight - (this.scrool_element.clientHeight+this.scrool_element.scrollTop), this.scrool_element.clientHeight, this.scrool_element.scrollTop);
+
+				if (!this.scrool_element || (this.scrool_element.clientHeight+this.scrool_element.scrollTop + 200) >= this.scrool_element.scrollHeight)
 				{
 					this.getRecords();
 				}
@@ -212,7 +230,10 @@
 		},
 	  	computed: {},
 		created () { window.addEventListener("scroll", this.chackAnotherPages); },
-		destroyed () { window.removeEventListener("scroll", this.chackAnotherPages); },
+		destroyed () {
+			window.removeEventListener("scroll", this.chackAnotherPages);
+			this.scrool_element.removeEventListener("scroll", this.chackAnotherPages);
+		},
 	  	mounted () { this.getRecords(); }
 
 	}).mount('#fastTableApp_{{ key }}')
