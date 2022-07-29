@@ -81,7 +81,7 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
         $io->progressStart(count($entities));
         foreach ($entities as $entity)
         {
-            $data[] = $fss->getEntObj($entity, $entityInfos[$entKey]['fields']);
+            $data[] = $fss->getEntObj($entity, $entityInfos[$entKey]['fields'], $entKey);
             $io->progressAdvance();
         }
 

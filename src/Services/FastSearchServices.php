@@ -192,12 +192,20 @@ class FastSearchServices extends AbstractExtension
     }
 
 
-    public function getEntObj ($entity, $fields)
+    public function getEntObj ($entity, $fields, $entityKey)
     {
         $temp = ['id'=>$entity->getId()];
         foreach ($fields as $fKey => $info)
+        {
             if (method_exists($entity, 'get'.ucfirst($fKey)))
                 $temp[$fKey] = $entity->{'get'.ucfirst($fKey)}();
+
+            $eventDispatcher = $this->container->get('event_dispatcher');
+            $event = new PrepareRecordEvent($entity, $fKey, $fields, $entityKey, $temp[$fKey]??null);
+            $eventDispatcher->dispatch(NetlivaFastSearchEvents::PREPARE_RECORD, $event);
+
+            $temp[$fKey] = $event->getValue();
+        }
 
         return $temp;
     }

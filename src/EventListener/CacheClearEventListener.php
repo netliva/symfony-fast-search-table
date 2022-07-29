@@ -51,7 +51,7 @@ class CacheClearEventListener
 
                         $data = [];
                         foreach ($entities as $e)
-                            $data[] = $fss->getEntObj($e, $entInfo['fields']);
+                            $data[] = $fss->getEntObj($e, $entInfo['fields'], $entKey);
 
                         file_put_contents($filePath, json_encode($data));
                         continue;
@@ -62,12 +62,12 @@ class CacheClearEventListener
                     $data = json_decode(file_get_contents($filePath), true);
                     switch ($action) {
                         case 'persist':
-                            $data[] = $fss->getEntObj($entity, $entInfo['fields']);
+                            $data[] = $fss->getEntObj($entity, $entInfo['fields'], $entKey);
                         break;
                         case 'update':
                             $data = $fss->sort($data, 'id');
                             $key  = $fss->binarySearch($data, $entity->getId(), 'id', 'strcmp', count($data) - 1, 0, true);
-                            $data[$key] = $fss->getEntObj($entity, $entInfo['fields']);
+                            $data[$key] = $fss->getEntObj($entity, $entInfo['fields'], $entKey);
                         break;
                         case 'remove':
                             $data = $fss->sort($data, 'id');

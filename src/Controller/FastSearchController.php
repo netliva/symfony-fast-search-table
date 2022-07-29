@@ -60,7 +60,7 @@ class FastSearchController extends Controller
 
         $data = [];
         foreach ($entities as $entity)
-            $data[] = $fss->getEntObj($entity, $entityInfos[$key]['fields']);
+            $data[] = $fss->getEntObj($entity, $entityInfos[$key]['fields'], $key);
 
         if(!is_dir($cachePath))
             mkdir($cachePath, 0777, true);
