@@ -3,6 +3,8 @@
 namespace Netliva\SymfonyFastSearchBundle\Services;
 
 
+use Netliva\SymfonyFastSearchBundle\Events\NetlivaFastSearchEvents;
+use Netliva\SymfonyFastSearchBundle\Events\PrepareRecordEvent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\Markup;
@@ -87,6 +89,10 @@ class FastSearchServices extends AbstractExtension
                                     (
                                         $filterData[$fKey]['exp'] == 'eq' && $record[$field] == $fValue
                                     )
+                                    ||
+                                    (
+                                        $filterData[$fKey]['exp'] == 'in' &&  in_array($fValue, $record[$field])
+                                    )
                                 )
 
                             ) ||
@@ -106,6 +112,25 @@ class FastSearchServices extends AbstractExtension
         });
     }
 
+    public function sort($array, $field, $direction = 'asc')
+    {
+        $c = new \Collator('tr_TR');
+        usort($array, function ($a, $b) use ($field, $direction, $c)
+        {
+            $compare = $c->compare($a[$field], $b[$field]);
+
+            if (!$compare)
+                return 0;
+
+            if ($direction == 'desc')
+                return -$compare;
+
+            return $compare;
+        });
+
+        return $array;
+    }
+
     public function quickSort($array, $field, $direction = 'asc')
     {
         if(count($array) < 2)
@@ -118,11 +143,12 @@ class FastSearchServices extends AbstractExtension
         $c = new \Collator('tr_TR');
         foreach($array as $val)
         {
-            if(($c->compare($val[$field], $pivot[$field]) <= 0 and $direction == 'asc') || ($c->compare($val[$field], $pivot[$field]) > 0 and $direction == 'desc'))
+            $compare = $c->compare($val[$field], $pivot[$field]);
+            if(($direction == 'asc' and $compare <= 0) || ($direction == 'desc' and $compare > 0))
             {
                 $loe[] = $val;
             }
-            elseif (($c->compare($val[$field], $pivot[$field]) > 0 and $direction == 'asc') || ($c->compare($val[$field], $pivot[$field]) <= 0 and $direction == 'desc'))
+            elseif (($direction == 'asc' and $compare > 0) || ($direction == 'desc' and $compare <= 0))
             {
                 $gt[] = $val;
             }

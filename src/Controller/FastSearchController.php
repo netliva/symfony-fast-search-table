@@ -32,7 +32,7 @@ class FastSearchController extends Controller
         $limitPerPage = $entityInfos[$key]['limit_per_page'] ?: $limitPerPage;
         $records      = json_decode(file_get_contents($filePath), true);
         $records      = $fss->filterRecords($records, $content['filters'], $entityInfos[$key]['filters']);
-        $records      = $fss->quickSort($records, $content['sort_field'], $content['sort_direction']);
+        $records      = $fss->sort($records, $content['sort_field'], $content['sort_direction']);
         $total        = count($records);
         $records      = array_slice($records, $limitPerPage * ($page - 1), $limitPerPage);
 
