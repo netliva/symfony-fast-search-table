@@ -67,7 +67,8 @@ class CacheClearEventListener
                         case 'update':
                             $data = $fss->sort($data, 'id');
                             $key  = $fss->binarySearch($data, $entity->getId(), 'id', 'strcmp', count($data) - 1, 0, true);
-                            $data[$key] = $fss->getEntObj($entity, $entInfo['fields'], $entKey);
+                            if (strlen($key))
+                                $data[$key] = $fss->getEntObj($entity, $entInfo['fields'], $entKey);
                         break;
                         case 'remove':
                             $data = $fss->sort($data, 'id');

@@ -10,5 +10,12 @@ final class NetlivaFastSearchEvents
 	 * @Event("Netliva\SymfonyFastSearchBundle\Events\PrepareRecordEvent")
 	 */
 	const  PREPARE_RECORD = 'netliva_fast_search.prepare_record';
+    
+	/**
+	 * Veriler ekrana basılmadan hemen önce verilerin düzenlenmesi için
+	 *
+	 * @Event("Netliva\SymfonyFastSearchBundle\Events\BeforeViewEvent")
+	 */
+	const  BEFORE_VIEW = 'netliva_fast_search.before_show';
 
 }

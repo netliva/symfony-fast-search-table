@@ -2,6 +2,8 @@
 
 namespace Netliva\SymfonyFastSearchBundle\Controller;
 
+use Netliva\SymfonyFastSearchBundle\Events\BeforeViewEvent;
+use Netliva\SymfonyFastSearchBundle\Events\NetlivaFastSearchEvents;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,8 +38,12 @@ class FastSearchController extends Controller
         $total        = count($records);
         $records      = array_slice($records, $limitPerPage * ($page - 1), $limitPerPage);
 
+        $eventDispatcher = $this->container->get('event_dispatcher');
+        $event = new BeforeViewEvent($records, $key, $entityInfos[$key]);
+        $eventDispatcher->dispatch(NetlivaFastSearchEvents::BEFORE_VIEW, $event);
 
-        return new JsonResponse(['records'=>$records, 'loaded' => $limitPerPage * $page, 'total' => $total]);
+
+        return new JsonResponse(['records'=>$event->getRecords(), 'loaded' => $limitPerPage * $page, 'total' => $total]);
     }
 
 
