@@ -47,7 +47,7 @@ class CacheClearEventListener
                     if(!file_exists($filePath))
                     {
                         $em       = $this->container->get('doctrine')->getManager();
-                        $entities = $em->getRepository($entityInfos[$entKey]['class'])->findAll();
+                        $entities = $em->getRepository($entInfo['class'])->findAll();
 
                         $data = [];
                         foreach ($entities as $e)
