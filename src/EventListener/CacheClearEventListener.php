@@ -46,6 +46,9 @@ class CacheClearEventListener
                     $filePath = $cachePath.'/'.$entKey.'.json';
                     if(!file_exists($filePath))
                     {
+                        if (!is_dir($cachePath))
+                            mkdir($cachePath, 0777, true);
+
                         $em       = $this->container->get('doctrine')->getManager();
                         $entities = $em->getRepository($entInfo['class'])->findAll();
 
