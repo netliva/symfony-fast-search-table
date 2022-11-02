@@ -2,18 +2,15 @@
 
 namespace Netliva\SymfonyFastSearchBundle\EventListener;
 
-use Crm\DefaultBundle\Services\CacheService;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class CacheClearEventListener
 {
-    private $cacheService;
     private $container;
 
-    public function __construct (CacheService $cacheService, ContainerInterface $container)
+    public function __construct (ContainerInterface $container)
     {
-        $this->cacheService = $cacheService;
         $this->container    = $container;
     }
 
