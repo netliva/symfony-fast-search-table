@@ -89,6 +89,17 @@
 				</tr>
 			</template>
 
+			{#  ---  Kayıt Varken ve Veriler Yüklenirken  ---  #}
+			<template v-if="entities.length>0 && in_action">
+				<tr v-for="i in 3">
+					{% for i in 1..(options.table_columns|length) %}
+						<td>
+							<div class="placeholder-item"></div>
+						</td>
+					{% endfor %}
+				</tr>
+			</template>
+
 		</tbody>
 	</table>
 
