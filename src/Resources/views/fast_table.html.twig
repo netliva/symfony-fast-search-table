@@ -47,8 +47,21 @@
 			</tr>
 		</thead>
 		<tbody>
+			{#  ---  Cache temizlenip, yeniden oluşturulurken  ---  #}
+			<template v-if="cache_creating">
+				<tr>
+					<td colspan="{{ options.table_columns|length }}">
+						<div style="padding: 50px; text-align: center;">
+							Veriler Yeniden Oluşturuluyor...
+							<br />
+							[['%'+cache_creating_percent+' oluşturuldu']]
+						</div>
+					</td>
+				</tr>
+			</template>
+
 			{#  ---  Veriler Yüklenirken  ---  #}
-			<template v-if="entities.length==0 && in_action">
+			<template v-if="(entities.length==0 && in_action) || cache_creating">
 				<tr v-for="i in 10">
 					{% for i in 1..(options.table_columns|length) %}
 						<td>
@@ -59,7 +72,7 @@
 			</template>
 
 			{#  ---  Kayıt Bulunamadığında  ---  #}
-			<template v-if="entities.length==0 && !in_action">
+			<template v-if="entities.length==0 && !in_action && !cache_creating">
 				<tr>
 					<td colspan="{{ options.table_columns|length }}">
 						<div style="padding: 50px; text-align: center;">
@@ -70,7 +83,7 @@
 			</template>
 
 			{#  ---  Kayıtların Listelenmesi  ---  #}
-			<template v-for="{{ options.record_variable_name }} in entities">
+			<template v-if="!cache_creating" v-for="{{ options.record_variable_name }} in entities">
 				<tr :id="'fastTableApp_{{ key }}_'+{{  options.record_variable_name  }}.id" >
 					{{ options.table_tbody_cells_vue_template|raw }}
 				</tr>
@@ -125,6 +138,7 @@
 				entities: [],
 				loaded_all_records: false,
 				in_action: false,
+				cache_creating: false,
 				sort_direction: '{{ entityInfos.default_sorting_direction }}',
 				sort_field: '{{ entityInfos.default_sort_field }}',
 				total: 0,
@@ -194,16 +208,38 @@
 
 				this.resetList();
 			},
-			clearCache ()
+			clearCache (e)
 			{
+				e.preventDefault();
+				this.cache_creating_percent = 0;
+				this.cacheCreating();
+				return false;
+			},
+			cacheCreating ()
+			{
+				this.cache_creating = true;
 				axios
 					.post('{{ path('netliva_fast_search_remove_cache', {'key': key}) }}',)
-					.then( response => this.resetList() );
+					.then( response => {
+						console.log('response.data =>', response.data);
+						if (response.data.info.complete) {
+							this.cache_creating = false;
+							this.resetList();
+						}
+						else
+						{
+							this.cache_creating_percent = Math.round(100*response.data.info.offset/response.data.info.count);
+							console.log('cache_creating_percent =>', this.cache_creating_percent);
+							if (this.cache_creating_percent>100) this.cache_creating_percent = 100;
+							this.total = response.data.info.offset;
+							this.cacheCreating();
+						}
+					} );
 			},
 			getRecords ()
 			{
 				console.log('in_action:', this.in_action);
-				if (this.in_action || this.loaded_all_records) return;
+				if (this.in_action || this.cache_creating || this.loaded_all_records) return;
 				this.in_action = true;
 
 				if (!this.page){

@@ -3,6 +3,7 @@
 namespace Netliva\SymfonyFastSearchBundle\EventListener;
 
 use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\ORM\Query;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class CacheClearEventListener
@@ -43,23 +44,12 @@ class CacheClearEventListener
                     $filePath = $cachePath.'/'.$entKey.'.json';
                     if(!file_exists($filePath))
                     {
-                        if (!is_dir($cachePath))
-                            mkdir($cachePath, 0777, true);
-
-                        $em       = $this->container->get('doctrine')->getManager();
-                        $entities = $em->getRepository($entInfo['class'])->findAll();
-
-                        $data = [];
-                        foreach ($entities as $e)
-                            $data[] = $fss->getEntObj($e, $entInfo['fields'], $entKey);
-
-                        file_put_contents($filePath, json_encode($data));
                         continue;
                     }
 
-
-
                     $data = json_decode(file_get_contents($filePath), true);
+                    if (!is_array($data)) return $data = [];
+
                     switch ($action) {
                         case 'persist':
                             $data[] = $fss->getEntObj($entity, $entInfo['fields'], $entKey);

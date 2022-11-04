@@ -114,6 +114,8 @@ class FastSearchServices extends AbstractExtension
 
     public function sort($array, $field, $direction = 'asc')
     {
+        if (!is_array($array)) return $array;
+        
         $c = new \Collator('tr_TR');
         usort($array, function ($a, $b) use ($field, $direction, $c)
         {

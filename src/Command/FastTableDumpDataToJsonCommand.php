@@ -3,6 +3,7 @@
 namespace Netliva\SymfonyFastSearchBundle\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Query;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,7 +18,7 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
      */
     protected function configure()
     {
-    	// Her saba saat 5'te cron çalışıyor
+        // Her saba saat 5'te cron çalışıyor
         $this
             ->setName('netliva:fast_table:dump_to_json')
             ->addArgument('entity-name', InputArgument::OPTIONAL, 'Oluşturulacak mülke ait tanım bilgisi')
@@ -66,26 +67,61 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
         if(!is_dir($cachePath))
             mkdir($cachePath, 0777, true);
 
+        $tempPath = $cachePath.'/'.$entKey.'-temp.json';
         $filePath = $cachePath.'/'.$entKey.'.json';
-        if(file_exists($filePath))
-            unlink($filePath);
+        if(file_exists($tempPath))
+            unlink($tempPath);
 
         /** @var EntityManagerInterface $em */
         $em = $this->getContainer()->get('doctrine')->getManager();
-        $entities = $em->getRepository($entityInfos[$entKey]['class'])->findAll();
 
-        $data = [];
+        $qb = $em->createQueryBuilder();
+        $qb->select('count(ent.id)');
+        $qb->from($entityInfos[$entKey]['class'],'ent');
+        $count = $qb->getQuery()->getSingleScalarResult();
 
         $io = new SymfonyStyle($input, $output);
         $io->createProgressBar();
-        $io->progressStart(count($entities));
-        foreach ($entities as $entity)
+        $io->progressStart($count);
+
+
+        $say = 0;
+        $limit = 500;
+        $dataFile = fopen($tempPath, 'w');
+        fwrite($dataFile, "[".PHP_EOL);
+        // $data = [];
+        for ($i = 0; $i<round($count/$limit); $i++)
         {
-            $data[] = $fss->getEntObj($entity, $entityInfos[$entKey]['fields'], $entKey);
-            $io->progressAdvance();
+            $em->clear();
+            $qb = $em->getRepository($entityInfos[$entKey]['class'])->createQueryBuilder('ent');
+            $qb->setMaxResults($limit);
+            $qb->setFirstResult($i*$limit);
+            $query = $qb->getQuery();
+            $query->setHint(Query::HINT_FORCE_PARTIAL_LOAD, true);
+            foreach ($query->getResult() as $entity)
+            {
+                $say++;
+                // $data[] = $fss->getEntObj($entity, $entityInfos[$entKey]['fields'], $entKey);
+                $data = $fss->getEntObj($entity, $entityInfos[$entKey]['fields'], $entKey);
+                unset($entity);
+                fwrite($dataFile, json_encode($data).($say==$count?'':',').PHP_EOL);
+                unset($data);
+                $io->progressAdvance();
+            }
+
+        }
+        fwrite($dataFile, "]");
+        fclose($dataFile);
+
+
+        if(file_exists($tempPath))
+        {
+            if(file_exists($filePath))
+                unlink($filePath);
+            rename($tempPath, $filePath);
         }
 
-        file_put_contents($filePath, json_encode($data));
+        // file_put_contents($filePath, json_encode($data));
 
 
         $io->newLine();
