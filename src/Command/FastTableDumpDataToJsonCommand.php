@@ -78,6 +78,14 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
         $qb = $em->createQueryBuilder();
         $qb->select('count(ent.id)');
         $qb->from($entityInfos[$entKey]['class'],'ent');
+
+        // Kayıt limitleme var ise - belli bir tarihten önceki kayıtları işleme alma
+        if (key_exists('limit', $entityInfos[$entKey]) && $entityInfos[$entKey]['limit'])
+        {
+            $qb->where($qb->expr()->gte('ent.'.$entityInfos[$entKey]['limit']['field'], ':limit'));
+            $qb->setParameter('limit', (new \DateTime($entityInfos[$entKey]['limit']['since']))->setTime(0,0,0));
+        }
+
         $count = $qb->getQuery()->getSingleScalarResult();
 
         $io = new SymfonyStyle($input, $output);
@@ -96,8 +104,14 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
             $qb = $em->getRepository($entityInfos[$entKey]['class'])->createQueryBuilder('ent');
             $qb->setMaxResults($limit);
             $qb->setFirstResult($i*$limit);
+            // Kayıt limitleme var ise - belli bir tarihten önceki kayıtları işleme alma
+            if (key_exists('limit', $entityInfos[$entKey]) && $entityInfos[$entKey]['limit'])
+            {
+                $qb->where($qb->expr()->gte('ent.'.$entityInfos[$entKey]['limit']['field'], ':limit'));
+                $qb->setParameter('limit', (new \DateTime($entityInfos[$entKey]['limit']['since']))->setTime(0,0,0));
+            }
             $query = $qb->getQuery();
-            $query->setHint(Query::HINT_FORCE_PARTIAL_LOAD, true);
+            // $query->setHint(Query::HINT_FORCE_PARTIAL_LOAD, true);
             foreach ($query->getResult() as $entity)
             {
                 $say++;

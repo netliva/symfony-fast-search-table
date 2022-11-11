@@ -4,7 +4,7 @@
 			{% if filterInfo.type == 'hidden' %}
 				<input type="hidden" v-model="filter_form.{{ filterKey }}">
 			{% else %}
-				<div class="d-flex align-items-center justify-content-center">
+				<div id="fastTableApp_{{ key }}_filter_{{ filterKey }}" class="d-flex align-items-center justify-content-center">
 					<strong class="nowrap">{{ filterInfo.title }} :</strong>
 					{% if filterInfo.type == 'text' %}
 						<input class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}">
@@ -27,6 +27,11 @@
 		<div>
 			<strong>Toplam Kayıt :</strong>
 			[[total]]
+			{% if entityInfos.limit is defined and entityInfos.limit.since is defined %}
+				<div>
+					<small><em>({{ entityInfos.limit.since|date('d.m.Y') }} sonrası kayıtlar)</em></small>
+				</div>
+			{% endif %}
 		</div>
 		<div>
 			<button class="btn btn-secondary btn-xs" style="height:34px; line-height:1.2;" @click="clearCache">
@@ -84,7 +89,7 @@
 
 			{#  ---  Kayıtların Listelenmesi  ---  #}
 			<template v-if="!cache_creating" v-for="{{ options.record_variable_name }} in entities">
-				<tr :id="'fastTableApp_{{ key }}_'+{{  options.record_variable_name  }}.id" >
+				<tr :id="'fastTableApp_{{ key }}_'+{{  options.record_variable_name  }}.id" :data-id="{{  options.record_variable_name  }}.id">
 					{{ options.table_tbody_cells_vue_template|raw }}
 				</tr>
 			</template>
@@ -153,6 +158,9 @@
 				sort_direction: '{{ entityInfos.default_sorting_direction }}',
 				sort_field: '{{ entityInfos.default_sort_field }}',
 				total: 0,
+				cacheAxiosController: null,
+				clearCacheClick: 0,
+				clearCacheTimer: null,
 				{% for key, value in options.vue_variables %}
 					{{ (key ~ ':'~ (value|json_encode)~',')|raw }}
 				{% endfor %}
@@ -222,15 +230,34 @@
 			clearCache (e)
 			{
 				e.preventDefault();
+				if (this.cache_creating)
+					this.cacheAxiosController.abort();
+
+				this.clearCacheClick++
 				this.cache_creating_percent = 0;
-				this.cacheCreating();
+				this.total = 0;
+				if(this.clearCacheClick === 1) { // tek click ise
+					var self = this
+					this.clearCacheTimer = setTimeout(function() {
+						self.cacheCreate(false);
+						self.clearCacheClick = 0
+					}, 700);
+				} else { // çift click ise
+					clearTimeout(this.clearCacheTimer);
+					this.cacheCreate(true);
+					this.clearCacheClick = 0;
+				}
 				return false;
 			},
-			cacheCreating ()
+			cacheCreate (force)
 			{
 				this.cache_creating = true;
+				this.cacheAxiosController = new AbortController();
 				axios
-					.post('{{ path('netliva_fast_search_remove_cache', {'key': key}) }}',)
+					.post(
+						'{{ path('netliva_fast_search_remove_cache', {'key': key, 'force': '__FRC__'}) }}'.replace('__FRC__', force?1:0),
+						{}, { signal: this.cacheAxiosController.signal }
+					)
 					.then( response => {
 						console.log('response.data =>', response.data);
 						if (response.data.info.complete) {
@@ -243,9 +270,11 @@
 							console.log('cache_creating_percent =>', this.cache_creating_percent);
 							if (this.cache_creating_percent>100) this.cache_creating_percent = 100;
 							this.total = response.data.info.offset;
-							this.cacheCreating();
+							this.cacheCreate(false);
 						}
-					} );
+					} ).catch(function (err) {
+						console.log('err =>', err);
+					});
 			},
 			getRecords ()
 			{

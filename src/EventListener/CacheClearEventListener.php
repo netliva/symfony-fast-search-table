@@ -63,7 +63,8 @@ class CacheClearEventListener
                         case 'remove':
                             $data = $fss->sort($data, 'id');
                             $key  = $fss->binarySearch($data, $entity->getId(), 'id', 'strcmp', count($data) - 1, 0, true);
-                            unset($data[$key]);
+                            if (strlen($key))
+                                unset($data[$key]);
                         break;
                     }
                     file_put_contents($filePath, json_encode($data));

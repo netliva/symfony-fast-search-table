@@ -50,9 +50,9 @@ class FastSearchController extends Controller
 
 
     /**
-     * @Route("/remove_cache/{key}", name="netliva_fast_search_remove_cache")
+     * @Route("/remove_cache/{key}/{force}", name="netliva_fast_search_remove_cache", defaults={"force": false})
      */
-    public function removeCacheAction ($key)
+    public function removeCacheAction ($key, $force)
     {
         $entityInfos = $this->getParameter('netliva_fast_search.entities');
         $cachePath   = $this->getParameter('netliva_fast_search.cache_path');
@@ -67,7 +67,7 @@ class FastSearchController extends Controller
         $filePath = $cachePath.'/'.$key.'.json';
 
         $info = null;
-        if (file_exists($infoPath))
+        if (!$force && file_exists($infoPath))
         {
             $info = json_decode(file_get_contents($infoPath));
             if ($info->complete)
@@ -98,6 +98,12 @@ class FastSearchController extends Controller
             $qb = $em->createQueryBuilder();
             $qb->select('count(ent.id)');
             $qb->from($entityInfos[$key]['class'],'ent');
+            // Kayıt limitleme var ise - belli bir tarihten önceki kayıtları işleme alma
+            if (key_exists('limit', $entityInfos[$key]) && $entityInfos[$key]['limit'])
+            {
+                $qb->where($qb->expr()->gte('ent.'.$entityInfos[$key]['limit']['field'], ':limit'));
+                $qb->setParameter('limit', (new \DateTime($entityInfos[$key]['limit']['since']))->setTime(0,0,0));
+            }
 
             $info = (object)[
                 'count'         => $qb->getQuery()->getSingleScalarResult(),
@@ -115,13 +121,17 @@ class FastSearchController extends Controller
 
         if ($info->offset == 0) fwrite($dataFile, "[".PHP_EOL);
 
-        $per = round($info->count/$limit);
-
         $qb = $em->getRepository($entityInfos[$key]['class'])->createQueryBuilder('ent');
         $qb->setMaxResults($limit);
         $qb->setFirstResult($info->offset);
+        // Kayıt limitleme var ise - belli bir tarihten önceki kayıtları işleme alma
+        if (key_exists('limit', $entityInfos[$key]) && $entityInfos[$key]['limit'])
+        {
+            $qb->where($qb->expr()->gte('ent.'.$entityInfos[$key]['limit']['field'], ':limit'));
+            $qb->setParameter('limit', (new \DateTime($entityInfos[$key]['limit']['since']))->setTime(0,0,0));
+        }
         $query = $qb->getQuery();
-        $query->setHint(Query::HINT_FORCE_PARTIAL_LOAD, true);
+        // $query->setHint(Query::HINT_FORCE_PARTIAL_LOAD, true);
         $say = $info->offset;
         foreach ($query->getResult() as $entity)
         {

@@ -73,6 +73,18 @@ class FastSearchServices extends AbstractExtension
                     $find = false;
                     foreach ($filterData[$fKey]['fields'] as $field)
                     {
+
+                        if (preg_match('/^([^.]+)\.(.+)/', $field, $matches))
+                        {
+                            $rec = $record[$matches[1]];
+                            foreach (explode('.', $matches[2]) as $item)
+                            {
+                                if (is_array($rec) && key_exists($item, $rec))
+                                    $rec = $rec[$item];
+                            }
+                        }
+                        else $rec = $record[$field];
+
                         if (
                             (
                                 ($filterData[$fKey]['type'] == 'text' || $filterData[$fKey]['type'] == 'hidden')
@@ -80,23 +92,24 @@ class FastSearchServices extends AbstractExtension
                                 (
                                     (
                                         (!$filterData[$fKey]['exp'] || $filterData[$fKey]['exp'] == 'like') &&
+                                        is_string($rec) &&
                                         mb_stripos(
-                                            mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $record[$field])),
+                                            mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $rec)),
                                             mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $fValue)),
                                             0, "utf-8") !== false
                                     )
                                     ||
                                     (
-                                        $filterData[$fKey]['exp'] == 'eq' && $record[$field] == $fValue
+                                        $filterData[$fKey]['exp'] == 'eq' && $rec == $fValue
                                     )
                                     ||
                                     (
-                                        $filterData[$fKey]['exp'] == 'in' &&  in_array($fValue, $record[$field])
+                                        $filterData[$fKey]['exp'] == 'in' &&  in_array($fValue, $rec)
                                     )
                                 )
 
                             ) ||
-                            ($filterData[$fKey]['type'] == 'select' && $record[$field] == $fValue)
+                            ($filterData[$fKey]['type'] == 'select' && $rec == $fValue)
                         )
                         {
                             $find = true;
@@ -115,7 +128,7 @@ class FastSearchServices extends AbstractExtension
     public function sort($array, $field, $direction = 'asc')
     {
         if (!is_array($array)) return $array;
-        
+
         $c = new \Collator('tr_TR');
         usort($array, function ($a, $b) use ($field, $direction, $c)
         {
@@ -200,7 +213,23 @@ class FastSearchServices extends AbstractExtension
         foreach ($fields as $fKey => $info)
         {
             if (method_exists($entity, 'get'.ucfirst($fKey)))
+            {
                 $temp[$fKey] = $entity->{'get'.ucfirst($fKey)}();
+                if ($temp[$fKey] instanceof \DateTime)
+                    $temp[$fKey] = $temp[$fKey]->format('c');
+            }
+            elseif (method_exists($entity, 'is'.ucfirst($fKey)))
+            {
+                $temp[$fKey] = $entity->{'is'.ucfirst($fKey)}();
+                if ($temp[$fKey] instanceof \DateTime)
+                    $temp[$fKey] = $temp[$fKey]->format('c');
+            }
+            elseif (method_exists($entity, ucfirst($fKey)))
+            {
+                $temp[$fKey] = $entity->{ucfirst($fKey)}();
+                if ($temp[$fKey] instanceof \DateTime)
+                    $temp[$fKey] = $temp[$fKey]->format('c');
+            }
 
             $eventDispatcher = $this->container->get('event_dispatcher');
             $event = new PrepareRecordEvent($entity, $fKey, $fields, $entityKey, $temp[$fKey]??null);
