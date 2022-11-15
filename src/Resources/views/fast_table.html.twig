@@ -8,6 +8,9 @@
 					<strong class="nowrap">{{ filterInfo.title }} :</strong>
 					{% if filterInfo.type == 'text' %}
 						<input class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}">
+					{% elseif filterInfo.type == 'date_range' %}
+						<input type="date" class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}.from"> -
+						<input type="date" class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}.to">
 					{% elseif filterInfo.type == 'select' %}
 						<select class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}">
 							<option value="">Farketmez</option>
@@ -27,11 +30,6 @@
 		<div>
 			<strong>Toplam Kayıt :</strong>
 			[[total]]
-			{% if entityInfos.limit is defined and entityInfos.limit.since is defined %}
-				<div>
-					<small><em>({{ entityInfos.limit.since|date('d.m.Y') }} sonrası kayıtlar)</em></small>
-				</div>
-			{% endif %}
 		</div>
 		<div>
 			<button class="btn btn-secondary btn-xs" style="height:34px; line-height:1.2;" @click="clearCache">
@@ -148,7 +146,14 @@
 				scrool_element: 0,
 				filter_form: {
 					{% for filterKey, filterInfo in entityInfos.filters %}
-						{{ (filterKey~':"' ~ (options.filter_values[filterKey]??'') ~ '",')|raw }}
+						{% if filterInfo.type == 'date_range' %}
+							{{ (filterKey~':{
+								  from: ' ~ (options.filter_values[filterKey].from is defined and options.filter_values[filterKey].from is not null ?'"'~options.filter_values[filterKey].from~'"':'null') ~ ',
+								  to: ' ~ (options.filter_values[filterKey].to is defined and options.filter_values[filterKey].to is not null ?'"'~options.filter_values[filterKey].to~'"':'null') ~ '
+								},')|raw }}
+						{% else %}
+							{{ (filterKey~':' ~ (options.filter_values[filterKey] is defined and options.filter_values[filterKey] is not null ?'"'~options.filter_values[filterKey]~'"':'null') ~ ',')|raw }}
+						{% endif %}
 					{% endfor %}
 				},
 				entities: [],

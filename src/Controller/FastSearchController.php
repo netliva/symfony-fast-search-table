@@ -98,12 +98,7 @@ class FastSearchController extends Controller
             $qb = $em->createQueryBuilder();
             $qb->select('count(ent.id)');
             $qb->from($entityInfos[$key]['class'],'ent');
-            // Kayıt limitleme var ise - belli bir tarihten önceki kayıtları işleme alma
-            if (key_exists('limit', $entityInfos[$key]) && $entityInfos[$key]['limit'])
-            {
-                $qb->where($qb->expr()->gte('ent.'.$entityInfos[$key]['limit']['field'], ':limit'));
-                $qb->setParameter('limit', (new \DateTime($entityInfos[$key]['limit']['since']))->setTime(0,0,0));
-            }
+            $fss->addWhereToQuery($qb, $entityInfos[$key]['where']);
 
             $info = (object)[
                 'count'         => $qb->getQuery()->getSingleScalarResult(),
@@ -124,12 +119,7 @@ class FastSearchController extends Controller
         $qb = $em->getRepository($entityInfos[$key]['class'])->createQueryBuilder('ent');
         $qb->setMaxResults($limit);
         $qb->setFirstResult($info->offset);
-        // Kayıt limitleme var ise - belli bir tarihten önceki kayıtları işleme alma
-        if (key_exists('limit', $entityInfos[$key]) && $entityInfos[$key]['limit'])
-        {
-            $qb->where($qb->expr()->gte('ent.'.$entityInfos[$key]['limit']['field'], ':limit'));
-            $qb->setParameter('limit', (new \DateTime($entityInfos[$key]['limit']['since']))->setTime(0,0,0));
-        }
+        $fss->addWhereToQuery($qb, $entityInfos[$key]['where']);
         $query = $qb->getQuery();
         // $query->setHint(Query::HINT_FORCE_PARTIAL_LOAD, true);
         $say = $info->offset;

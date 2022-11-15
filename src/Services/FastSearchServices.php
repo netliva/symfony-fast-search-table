@@ -3,6 +3,7 @@
 namespace Netliva\SymfonyFastSearchBundle\Services;
 
 
+use Doctrine\ORM\QueryBuilder;
 use Netliva\SymfonyFastSearchBundle\Events\NetlivaFastSearchEvents;
 use Netliva\SymfonyFastSearchBundle\Events\PrepareRecordEvent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -62,13 +63,50 @@ class FastSearchServices extends AbstractExtension
         ]);
 	}
 
+    public function addWhereToQuery (QueryBuilder $qb, $wheres)
+    {
+        // Kayıt limitleme var ise - belli bir tarihten önceki kayıtları işleme alma
+        if (count($wheres))
+        {
+            foreach ($wheres as $key=>$whereInfo)
+            {
+                if (is_null($whereInfo['value']))
+                {
+                    $qb->andWhere($qb->expr()->{$whereInfo['expr']}('ent.'.$whereInfo['field']));
+                }
+                else
+                {
+                    switch ($whereInfo['valueType'])
+                    {
+                        case 'date' : $value = (new \DateTime($whereInfo['value']))->setTime(0,0,0); break;
+                        default : $value = $whereInfo['value']; break;
+                    }
+                    $qb->andWhere($qb->expr()->{$whereInfo['expr']}('ent.'.$whereInfo['field'], ':whr'.$key));
+                    $qb->setParameter('whr'.$key, $value);
+                }
+            }
+        }
+
+    }
+
     public function filterRecords ($records, $filter, $filterData)
     {
         return array_filter($records, function ($record) use ($filter, $filterData)
         {
-            foreach ($filter as $fKey => $fValue)
+            foreach ($filter as $fKey => $filterValue)
             {
-                if (mb_strlen($fValue)>0)
+                if($filterData[$fKey]['type'] == 'date_range')
+                {
+                    $fromDate = $filterValue['from']??null;
+                    $toDate = $filterValue['to']??null;
+                }
+                if (
+                    key_exists($fKey, $filterData)
+                    && (
+                        (is_string($filterValue) && mb_strlen($filterValue)>0)
+                        || ($filterData[$fKey]['type'] == 'date_range' && is_array($filterValue) && ($fromDate || $toDate))
+                    )
+                )
                 {
                     $find = false;
                     foreach ($filterData[$fKey]['fields'] as $field)
@@ -76,40 +114,68 @@ class FastSearchServices extends AbstractExtension
 
                         if (preg_match('/^([^.]+)\.(.+)/', $field, $matches))
                         {
-                            $rec = $record[$matches[1]];
+                            $recValue = $record[$matches[1]];
                             foreach (explode('.', $matches[2]) as $item)
                             {
-                                if (is_array($rec) && key_exists($item, $rec))
-                                    $rec = $rec[$item];
+                                if (is_array($recValue) && key_exists($item, $recValue))
+                                    $recValue = $recValue[$item];
                             }
                         }
-                        else $rec = $record[$field];
+                        else $recValue = $record[$field];
+
+
 
                         if (
                             (
+                                // Metin ve gizli arama
                                 ($filterData[$fKey]['type'] == 'text' || $filterData[$fKey]['type'] == 'hidden')
                                 &&
                                 (
                                     (
                                         (!$filterData[$fKey]['exp'] || $filterData[$fKey]['exp'] == 'like') &&
-                                        is_string($rec) &&
+                                        is_string($recValue) &&
                                         mb_stripos(
-                                            mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $rec)),
-                                            mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $fValue)),
+                                            mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $recValue)),
+                                            mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $filterValue)),
                                             0, "utf-8") !== false
                                     )
                                     ||
                                     (
-                                        $filterData[$fKey]['exp'] == 'eq' && $rec == $fValue
+                                        $filterData[$fKey]['exp'] == 'eq' && $recValue == $filterValue
                                     )
                                     ||
                                     (
-                                        $filterData[$fKey]['exp'] == 'in' &&  in_array($fValue, $rec)
+                                        $filterData[$fKey]['exp'] == 'in' &&  in_array($filterValue, $recValue)
+                                    )
+                                    ||
+                                    (
+                                        $filterData[$fKey]['exp'] == 'isNull' && (($filterValue && is_null($recValue)) || (!$filterValue && !is_null($recValue)))
+                                    )
+                                    ||
+                                    (
+                                        $filterData[$fKey]['exp'] == 'isNotNull' && (($filterValue && !is_null($recValue)) || (!$filterValue && is_null($recValue)))
+                                    )
+                                    ||
+                                    (
+                                        $filterData[$fKey]['exp'] == 'isTrue' && (($filterValue && !!$recValue) || (!$filterValue && !$recValue))
+                                    )
+                                    ||
+                                    (
+                                        $filterData[$fKey]['exp'] == 'isFalse' && (($filterValue && !$recValue) || (!$filterValue && !!$recValue))
                                     )
                                 )
 
-                            ) ||
-                            ($filterData[$fKey]['type'] == 'select' && $rec == $fValue)
+                            )
+                            || // seçim arama
+                            ( $filterData[$fKey]['type'] == 'select' && $recValue == $filterValue )
+                            || // tarih aralığı araması
+                            ( $filterData[$fKey]['type'] == 'date_range' && $recValue &&
+                                (
+                                    ($fromDate && $toDate && new \DateTime($fromDate) <= new \DateTime($recValue) && new \DateTime($recValue) <= (new \DateTime($toDate))->modify('tomorrow midnight'))
+                                    || ($fromDate && !$toDate && new \DateTime($fromDate) <= new \DateTime($recValue))
+                                    || (!$fromDate && $toDate && new \DateTime($recValue) <= (new \DateTime($toDate))->modify('tomorrow midnight'))
+                                )
+                            )
                         )
                         {
                             $find = true;
@@ -206,30 +272,34 @@ class FastSearchServices extends AbstractExtension
         return $key;
     }
 
+    public function getEntityValue ($entity, string $field)
+    {
+        if (method_exists($entity, 'get'.ucfirst($field)))
+        {
+            return $entity->{'get'.ucfirst($field)}();
+        }
+
+        if (method_exists($entity, 'is'.ucfirst($field)))
+        {
+            return $entity->{'is'.ucfirst($field)}();
+        }
+
+        if (method_exists($entity, $field))
+        {
+            return $entity->{ucfirst($field)}();
+        }
+
+        return null;
+    }
 
     public function getEntObj ($entity, $fields, $entityKey)
     {
         $temp = ['id'=>$entity->getId()];
         foreach ($fields as $fKey => $info)
         {
-            if (method_exists($entity, 'get'.ucfirst($fKey)))
-            {
-                $temp[$fKey] = $entity->{'get'.ucfirst($fKey)}();
-                if ($temp[$fKey] instanceof \DateTime)
-                    $temp[$fKey] = $temp[$fKey]->format('c');
-            }
-            elseif (method_exists($entity, 'is'.ucfirst($fKey)))
-            {
-                $temp[$fKey] = $entity->{'is'.ucfirst($fKey)}();
-                if ($temp[$fKey] instanceof \DateTime)
-                    $temp[$fKey] = $temp[$fKey]->format('c');
-            }
-            elseif (method_exists($entity, ucfirst($fKey)))
-            {
-                $temp[$fKey] = $entity->{ucfirst($fKey)}();
-                if ($temp[$fKey] instanceof \DateTime)
-                    $temp[$fKey] = $temp[$fKey]->format('c');
-            }
+            $temp[$fKey] = $this->getEntityValue($entity, $fKey);
+            if ($temp[$fKey] instanceof \DateTime)
+                $temp[$fKey] = $temp[$fKey]->format('c');
 
             $eventDispatcher = $this->container->get('event_dispatcher');
             $event = new PrepareRecordEvent($entity, $fKey, $fields, $entityKey, $temp[$fKey]??null);
