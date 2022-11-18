@@ -104,6 +104,7 @@ class FastSearchServices extends AbstractExtension
                     key_exists($fKey, $filterData)
                     && (
                         (is_string($filterValue) && mb_strlen($filterValue)>0)
+                        || is_numeric($filterValue)
                         || ($filterData[$fKey]['type'] == 'date_range' && is_array($filterValue) && ($fromDate || $toDate))
                     )
                 )
