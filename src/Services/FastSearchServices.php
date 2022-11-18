@@ -198,7 +198,26 @@ class FastSearchServices extends AbstractExtension
         $c = new \Collator('tr_TR');
         usort($array, function ($a, $b) use ($field, $direction, $c)
         {
-            $compare = $c->compare($a[$field], $b[$field]);
+            if (preg_match('/^([^.]+)\.(.+)/', $field, $matches))
+            {
+                $aVal = $a[$matches[1]];
+                $bVal = $b[$matches[1]];
+                foreach (explode('.', $matches[2]) as $item)
+                {
+                    if (is_array($aVal) && key_exists($item, $aVal))
+                        $aVal = $aVal[$item];
+                    if (is_array($bVal) && key_exists($item, $bVal))
+                        $bVal = $bVal[$item];
+                }
+            }
+            else {
+                $aVal = $a[$field];
+                $bVal = $b[$field];
+            }
+            if (!is_string($aVal)) $aVal = '';
+            if (!is_string($bVal)) $bVal = '';
+
+            $compare = $c->compare($aVal, $bVal);
 
             if (!$compare)
                 return 0;
