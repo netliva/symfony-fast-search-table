@@ -215,8 +215,9 @@ class FastSearchServices extends AbstractExtension
                 $aVal = $a[$field];
                 $bVal = $b[$field];
             }
-            if (!is_string($aVal)) $aVal = '';
-            if (!is_string($bVal)) $bVal = '';
+
+            if (!is_string($aVal) && !is_numeric($aVal)) $aVal = '';
+            if (!is_string($bVal) && !is_numeric($bVal)) $bVal = '';
 
             $compare = $c->compare($aVal, $bVal);
 
