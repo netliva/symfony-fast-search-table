@@ -302,6 +302,7 @@
 							filters : JSON.parse(JSON.stringify(this.filter_form)),
 							sort_field: this.sort_field,
 							sort_direction: this.sort_direction,
+							post_values: {{ options.post_values|json_encode|raw }},
 						},
 						{ cancelToken: this.axiosSource.token }
 					)

@@ -41,7 +41,7 @@ class FastSearchController extends Controller
         $records      = array_slice($records, $limitPerPage * ($page - 1), $limitPerPage);
 
         $eventDispatcher = $this->container->get('event_dispatcher');
-        $event = new BeforeViewEvent($records, $key, $entityInfos[$key]);
+        $event = new BeforeViewEvent($records, $key, $entityInfos[$key], $content);
         $eventDispatcher->dispatch(NetlivaFastSearchEvents::BEFORE_VIEW, $event);
 
 
