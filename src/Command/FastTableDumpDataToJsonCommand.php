@@ -22,6 +22,7 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
         $this
             ->setName('netliva:fast_table:dump_to_json')
             ->addArgument('entity-name', InputArgument::OPTIONAL, 'Oluşturulacak mülke ait tanım bilgisi')
+            ->addOption('limit', 'l', InputArgument::OPTIONAL, 'Her bir sorgunun getireceği kayıt sayısı')
             ->setDescription('Hızlı tablo için verileri json olarak kaydeder');
     }
 
@@ -58,6 +59,7 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $entKey = $input->getArgument('entity-name');
+        $limit  = $input->getOption('limit');
         $output->writeln($entKey. ' için veriler json´a yazılıyor!');
 
         $fss         = $this->getContainer()->get('netliva_fastSearchServices');
@@ -88,7 +90,7 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
 
 
         $say = 0;
-        $limit = 500;
+        if (!$limit) $limit = 500;
         $dataFile = fopen($tempPath, 'w');
         fwrite($dataFile, "[".PHP_EOL);
         // $data = [];
