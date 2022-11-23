@@ -13,7 +13,7 @@
 						<input type="date" class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}.to">
 					{% elseif filterInfo.type == 'select' %}
 						<select class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}">
-							<option>Farketmez</option>
+							<option value="null">Farketmez</option>
 							{% for key, val in (options.custom_filter_options[filterKey] ?? filterInfo.options) %}
 								<option value="{{ key }}">{{ val }}</option>
 							{% endfor %}
