@@ -298,6 +298,10 @@
 				}
 				this.page++;
 
+				for (const key in this.filter_form) {
+					if (this.filter_form[key] === 'null') this.filter_form[key] = null;
+				}
+
 				console.log(this.page, '. sayfayı yükle');
 				console.log('filters', JSON.parse(JSON.stringify(this.filter_form)));
 				axios
