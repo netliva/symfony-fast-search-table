@@ -17,6 +17,7 @@ class CacheClearEventListener
     {
         $this->container = $container;
         $this->fss       = $this->container->get('netliva_fastSearchServices');
+        $this->fcu       = $this->container->get('netliva_fastCacheUpdater');
     }
 
     public function postPersist(LifecycleEventArgs $args)
@@ -41,15 +42,15 @@ class CacheClearEventListener
         {
             foreach ($nfsEntities as $entKey => $entInfo)
             {
-                if (!$this->openData($entKey, $entInfo))
+                if (!$this->fcu->openData($entKey, $entInfo))
                     continue;
 
                 if (get_class($entity) == $entInfo['class'])
                 {
                     switch ($action) {
-                        case 'persist': $this->addData($entity); break;
-                        case 'update': $this->updateData($entity); break;
-                        case 'remove': $this->removeData($entity); break;
+                        case 'persist': $this->fcu->addData($entity); break;
+                        case 'update': $this->fcu->updateData($entity); break;
+                        case 'remove': $this->fcu->removeData($entity); break;
                     }
                 }
 
@@ -62,7 +63,7 @@ class CacheClearEventListener
                     }
                 }
 
-                $this->saveData();
+                $this->fcu->saveData();
             }
 
         }
@@ -89,12 +90,12 @@ class CacheClearEventListener
             if (is_array($subEntity) || $subEntity instanceof PersistentCollection || $subEntity instanceof ArrayCollection )
             {
                 foreach ($subEntity as $item)
-                    $this->updateData($item);
+                    $this->fcu->updateData($item);
                 return;
             }
 
             // eğer bulunan değer tek bir entity ise;
-            $this->updateData($subEntity);
+            $this->fcu->updateData($subEntity);
             return;
         }
 
@@ -108,69 +109,4 @@ class CacheClearEventListener
     }
 
 
-    private $data = [];
-    private $dataChanged = false;
-    private $entityInfo  = null;
-    private $entityKey  = null;
-    private function openData ($entKey, $entInfo)
-    {
-        $cachePath = $this->container->getParameter('netliva_fast_search.cache_path');
-        $filePath  = $cachePath.'/'.$entKey.'.json';
-        if(!file_exists($filePath))
-            return false;
-
-        $this->entityKey   = $entKey;
-        $this->entityInfo  = $entInfo;
-        $this->data        = json_decode(file_get_contents($filePath), true);
-        $this->dataChanged = false;
-        if (!is_array($this->data)) $this->data = [];
-
-        return  true;
-    }
-    private function addData ($entity)
-    {
-        if (get_class($entity) == $this->entityInfo['class'])
-        {
-            $this->data[] = $this->fss->getEntObj($entity, $this->entityInfo['fields'], $this->entityKey);
-            $this->dataChanged = true;
-        }
-    }
-    private function updateData ($entity)
-    {
-        if (get_class($entity) == $this->entityInfo['class'])
-        {
-            $this->data = $this->fss->sort($this->data, 'id');
-            $key  = $this->fss->binarySearch($this->data, $entity->getId(), 'id', 'strcmp', count($this->data) - 1, 0, true);
-            if (strlen($key))
-            {
-                $this->data[$key]  = $this->fss->getEntObj($entity, $this->entityInfo['fields'], $this->entityKey);
-                $this->dataChanged = true;
-            }
-        }
-    }
-    private function removeData ($entity)
-    {
-        if (get_class($entity) == $this->entityInfo['class'])
-        {
-            $this->data = $this->fss->sort($this->data, 'id');
-            $key  = $this->fss->binarySearch($this->data, $entity->getId(), 'id', 'strcmp', count($this->data) - 1, 0, true);
-            if (strlen($key))
-            {
-                unset($this->data[$key]);
-                $this->dataChanged = true;
-            }
-        }
-    }
-    private function saveData ()
-    {
-        if ($this->dataChanged)
-        {
-            $cachePath = $this->container->getParameter('netliva_fast_search.cache_path');
-            $filePath  = $cachePath.'/'.$this->entityKey.'.json';
-            if(!file_exists($filePath))
-                return false;
-
-            file_put_contents($filePath, json_encode($this->data));
-        }
-    }
 }
