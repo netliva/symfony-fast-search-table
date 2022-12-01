@@ -9,16 +9,26 @@ class BeforeViewEvent extends Event
     private $records;
     private $entityInfos;
     private $entityKey;
+    private $requests;
 
 	/**
 	 * PrepareRecordEvent constructor.
 	 */
-	public function __construct (?array $records, string $entityKey, array $entityInfos) {
-        $this->records      = $records;
+	public function __construct (?array $records, string $entityKey, array $entityInfos, $requests) {
+        $this->records     = $records;
         $this->entityKey   = $entityKey;
         $this->entityInfos = $entityInfos;
+        $this->requests    = $requests;
 	}
 
+
+    /**
+     * @return array|null
+     */
+    public function getRequests ()
+    {
+        return $this->requests;
+    }
 
     /**
      * @return array|null

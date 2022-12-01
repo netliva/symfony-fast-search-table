@@ -1,2 +1,3 @@
-# Reusable Bundle Template
-Reusable bundle oluşturmak için template yapısı
+# Symfony Fast Search Table
+Symfony için cache yapılı filtrelemeli tablo listeleme yapısı
+

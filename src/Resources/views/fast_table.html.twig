@@ -13,7 +13,7 @@
 						<input type="date" class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}.to">
 					{% elseif filterInfo.type == 'select' %}
 						<select class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}">
-							<option>Farketmez</option>
+							<option value="null">Farketmez</option>
 							{% for key, val in (options.custom_filter_options[filterKey] ?? filterInfo.options) %}
 								<option value="{{ key }}">{{ val }}</option>
 							{% endfor %}
@@ -28,8 +28,9 @@
 			</div>
 		{% endif %}
 		<div>
-			<strong>Toplam Kayıt :</strong>
-			[[total]]
+			<strong>Toplam Kayıt : &nbsp;</strong>
+			<span v-if="all_count==total">[[new Intl.NumberFormat('tr-TR', {maximumFractionDigits:2 }).format(total)]]</span>
+			<span v-else><sup>[[new Intl.NumberFormat('tr-TR', {maximumFractionDigits:2 }).format(total)]]</sup>/<sub>[[new Intl.NumberFormat('tr-TR', {maximumFractionDigits:2 }).format(all_count)]]</sub></span>
 		</div>
 		<div>
 			<button class="btn btn-secondary btn-xs" style="height:34px; line-height:1.2;" @click="clearCache">
@@ -163,6 +164,7 @@
 				sort_direction: '{{ entityInfos.default_sorting_direction }}',
 				sort_field: '{{ entityInfos.default_sort_field }}',
 				total: 0,
+				all_count: 0,
 				cacheAxiosController: null,
 				clearCacheClick: 0,
 				clearCacheTimer: null,
@@ -216,6 +218,7 @@
 				this.in_action = false;
 				this.loaded_all_records = false;
 				this.total = 0;
+				this.all_count = 0;
 				this.page = 0;
 				this.getRecords();
 			},
@@ -241,6 +244,7 @@
 				this.clearCacheClick++
 				this.cache_creating_percent = 0;
 				this.total = 0;
+				this.all_count = 0;
 				if(this.clearCacheClick === 1) { // tek click ise
 					var self = this
 					this.clearCacheTimer = setTimeout(function() {
@@ -275,6 +279,7 @@
 							console.log('cache_creating_percent =>', this.cache_creating_percent);
 							if (this.cache_creating_percent>100) this.cache_creating_percent = 100;
 							this.total = response.data.info.offset;
+							this.all_count = response.data.info.offset;
 							this.cacheCreate(false);
 						}
 					} ).catch(function (err) {
@@ -293,6 +298,10 @@
 				}
 				this.page++;
 
+				for (const key in this.filter_form) {
+					if (this.filter_form[key] === 'null') this.filter_form[key] = null;
+				}
+
 				console.log(this.page, '. sayfayı yükle');
 				console.log('filters', JSON.parse(JSON.stringify(this.filter_form)));
 				axios
@@ -302,11 +311,13 @@
 							filters : JSON.parse(JSON.stringify(this.filter_form)),
 							sort_field: this.sort_field,
 							sort_direction: this.sort_direction,
+							post_values: {{ options.post_values|json_encode|raw }},
 						},
 						{ cancelToken: this.axiosSource.token }
 					)
 					.then(response => {
 						this.total = response.data.total;
+						this.all_count = response.data.all_count;
 
 						if (response.data.records.length > 0)
 						{

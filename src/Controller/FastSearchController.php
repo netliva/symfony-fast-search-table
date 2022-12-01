@@ -34,6 +34,7 @@ class FastSearchController extends Controller
 
         $limitPerPage = $entityInfos[$key]['limit_per_page'] ?: $limitPerPage;
         $records      = json_decode(file_get_contents($filePath), true);
+        $all          = count($records);
         if (!$records) $records = [];
         $records      = $fss->filterRecords($records, $content['filters'], $entityInfos[$key]['filters']);
         $records      = $fss->sort($records, $content['sort_field'], $content['sort_direction']);
@@ -41,11 +42,11 @@ class FastSearchController extends Controller
         $records      = array_slice($records, $limitPerPage * ($page - 1), $limitPerPage);
 
         $eventDispatcher = $this->container->get('event_dispatcher');
-        $event = new BeforeViewEvent($records, $key, $entityInfos[$key]);
+        $event = new BeforeViewEvent($records, $key, $entityInfos[$key], $content);
         $eventDispatcher->dispatch(NetlivaFastSearchEvents::BEFORE_VIEW, $event);
 
 
-        return new JsonResponse(['records'=>$event->getRecords(), 'loaded' => $limitPerPage * $page, 'total' => $total]);
+        return new JsonResponse(['records'=>$event->getRecords(), 'loaded' => $limitPerPage * $page, 'total' => $total, 'all_count' => $all]);
     }
 
 
