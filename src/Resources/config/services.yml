@@ -10,6 +10,15 @@ services:
         alias: Netliva\SymfonyFastSearchBundle\Services\FastSearchServices
         public: true
 
+    Netliva\SymfonyFastSearchBundle\Services\FastCacheUpdaterServices:
+        class: Netliva\SymfonyFastSearchBundle\Services\FastCacheUpdaterServices
+        public: false
+        arguments: ["@doctrine.orm.entity_manager", "@service_container"]
+
+    netliva_fastCacheUpdater:
+        alias: Netliva\SymfonyFastSearchBundle\Services\FastCacheUpdaterServices
+        public: true
+
 
     netliva_fastSearch_cacheClear:
         class: Netliva\SymfonyFastSearchBundle\EventListener\CacheClearEventListener
