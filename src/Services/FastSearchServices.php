@@ -208,8 +208,13 @@ class FastSearchServices extends AbstractExtension
                 {
                     if (is_array($aVal) && key_exists($item, $aVal))
                         $aVal = $aVal[$item];
+                    elseif ($item == 'length' && is_array($aVal))
+                        $aVal = count($aVal);
+
                     if (is_array($bVal) && key_exists($item, $bVal))
                         $bVal = $bVal[$item];
+                    elseif ($item == 'length' && is_array($bVal))
+                        $bVal = count($bVal);
                 }
             }
             else {
