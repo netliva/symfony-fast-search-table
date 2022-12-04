@@ -106,6 +106,7 @@ class FastSearchServices extends AbstractExtension
                     && (
                         (is_string($filterValue) && mb_strlen($filterValue)>0)
                         || is_numeric($filterValue)
+                        || is_bool($filterValue)
                         || ($filterData[$fKey]['type'] == 'date_range' && is_array($filterValue) && ($fromDate || $toDate))
                     )
                 )
@@ -114,13 +115,34 @@ class FastSearchServices extends AbstractExtension
                     foreach ($filterData[$fKey]['fields'] as $field)
                     {
 
-                        if (preg_match('/^([^.]+)\.(.+)/', $field, $matches))
+                        // field..key --> dizi içindeki obje
+                        if (preg_match('/^([^.]+)\.\.(.+)/', $field, $matches))
+                        {
+                            $recValue = $record[$matches[1]];
+                            if (is_array($recValue))
+                            {
+                                $recValue = array_map(function($item) use ($matches){
+                                    foreach (explode('.', $matches[2]) as $keys)
+                                    {
+                                        if (is_array($item) && key_exists($keys, $item))
+                                            $item = $item[$keys];
+                                        else
+                                            $item = null;
+                                    }
+                                    return $item;
+                                }, $recValue);
+                            }
+                        }
+                        // field.key.key.key --> nested obje
+                        elseif (preg_match('/^([^.]+)\.(.+)/', $field, $matches))
                         {
                             $recValue = $record[$matches[1]];
                             foreach (explode('.', $matches[2]) as $item)
                             {
                                 if (is_array($recValue) && key_exists($item, $recValue))
                                     $recValue = $recValue[$item];
+                                else
+                                    $recValue = null;
                             }
                         }
                         else $recValue = $record[$field];
@@ -169,7 +191,12 @@ class FastSearchServices extends AbstractExtension
 
                             )
                             || // seçim arama
-                            ( $filterData[$fKey]['type'] == 'select' && $recValue == $filterValue )
+                            (
+                                $filterData[$fKey]['type'] == 'select' && (
+                                    (is_array($recValue) && in_array($filterValue, $recValue))
+                                    || (is_null($recValue) && $filterValue === 'is_null')
+                                    || $recValue === $filterValue)
+                            )
                             || // tarih aralığı araması
                             ( $filterData[$fKey]['type'] == 'date_range' && $recValue &&
                                 (

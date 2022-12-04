@@ -300,6 +300,8 @@
 
 				for (const key in this.filter_form) {
 					if (this.filter_form[key] === 'null') this.filter_form[key] = null;
+					else if (this.filter_form[key] === 'true') this.filter_form[key] = true;
+					else if (this.filter_form[key] === 'false') this.filter_form[key] = false;
 				}
 
 				console.log(this.page, '. sayfayı yükle');
