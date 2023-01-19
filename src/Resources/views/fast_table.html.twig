@@ -29,7 +29,7 @@
 		{% endif %}
 		<div>
 			<strong>Toplam Kayıt : &nbsp;</strong>
-			<span v-if="all_count==total || !show_count_with_total">[[new Intl.NumberFormat('tr-TR', {maximumFractionDigits:2 }).format(total)]]</span>
+			<span v-if="all_count==total || !{{ options.show_count_with_total?1:0 }}">[[new Intl.NumberFormat('tr-TR', {maximumFractionDigits:2 }).format(total)]]</span>
 			<span v-else><sup>[[new Intl.NumberFormat('tr-TR', {maximumFractionDigits:2 }).format(total)]]</sup>/<sub>[[new Intl.NumberFormat('tr-TR', {maximumFractionDigits:2 }).format(all_count)]]</sub></span>
 		</div>
 		<div>
