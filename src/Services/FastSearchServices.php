@@ -195,7 +195,7 @@ class FastSearchServices extends AbstractExtension
                                 $filterData[$fKey]['type'] == 'select' && (
                                     (is_array($recValue) && in_array($filterValue, $recValue))
                                     || (is_null($recValue) && $filterValue === 'is_null')
-                                    || $recValue === $filterValue)
+                                    || $recValue == $filterValue)
                             )
                             || // tarih aralığı araması
                             ( $filterData[$fKey]['type'] == 'date_range' && $recValue &&
