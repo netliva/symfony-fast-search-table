@@ -47,6 +47,7 @@ class FastSearchServices extends AbstractExtension
            'filter_values'                  => [],
            'post_values'                    => [],
            'table_class'                    => 'table table-striped table-hover table-bordered',
+           'show_count_with_total'          => true,
            'record_variable_name'           => 'entity',
            'table_thead_cells_vue_template' => '<th>ID</th>',
            'table_tbody_cells_vue_template' => '<td>[[entity.id]]</td>',
