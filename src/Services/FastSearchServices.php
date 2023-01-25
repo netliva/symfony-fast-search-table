@@ -163,29 +163,31 @@ class FastSearchServices extends AbstractExtension
                                             mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $recValue)),
                                             mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $filterValue)),
                                             0, "utf-8") !== false
-                                    )
-                                    ||
-                                    (
+                                    ) || (
                                         $filterData[$fKey]['exp'] == 'eq' && $recValue == $filterValue
-                                    )
-                                    ||
-                                    (
+                                    ) || (
+                                        $filterData[$fKey]['exp'] == 'neq' && $recValue != $filterValue
+                                    ) || (
+                                        $filterData[$fKey]['exp'] == 'lt' && $recValue < $filterValue
+                                    ) || (
+                                        $filterData[$fKey]['exp'] == 'lte' && $recValue <= $filterValue
+                                    ) || (
+                                        $filterData[$fKey]['exp'] == 'gt' && $recValue > $filterValue
+                                    ) || (
+                                        $filterData[$fKey]['exp'] == 'gte' && $recValue >= $filterValue
+                                    ) || (
+                                        $filterData[$fKey]['exp'] == 'date_lt' && (bool)strtotime($recValue) && (bool)strtotime($filterValue) && new \DateTime($recValue) < new \DateTime($filterValue)
+                                    ) || (
+                                        $filterData[$fKey]['exp'] == 'date_gt' && (bool)strtotime($recValue) && (bool)strtotime($filterValue) && new \DateTime($recValue) > new \DateTime($filterValue)
+                                    ) || (
                                         $filterData[$fKey]['exp'] == 'in' &&  in_array($filterValue, $recValue)
-                                    )
-                                    ||
-                                    (
+                                    ) || (
                                         $filterData[$fKey]['exp'] == 'isNull' && (($filterValue && is_null($recValue)) || (!$filterValue && !is_null($recValue)))
-                                    )
-                                    ||
-                                    (
+                                    ) || (
                                         $filterData[$fKey]['exp'] == 'isNotNull' && (($filterValue && !is_null($recValue)) || (!$filterValue && is_null($recValue)))
-                                    )
-                                    ||
-                                    (
+                                    ) || (
                                         $filterData[$fKey]['exp'] == 'isTrue' && (($filterValue && !!$recValue) || (!$filterValue && !$recValue))
-                                    )
-                                    ||
-                                    (
+                                    ) || (
                                         $filterData[$fKey]['exp'] == 'isFalse' && (($filterValue && !$recValue) || (!$filterValue && !!$recValue))
                                     )
                                 )

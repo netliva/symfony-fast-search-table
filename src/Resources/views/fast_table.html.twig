@@ -24,7 +24,7 @@
 		{% endfor %}
 		{% if entityInfos.filters|length %}
 			<div>
-				<button class="btn btn-success" @click="postFilter">Filtrele</button>
+				<button id="fastTableApp_{{ key }}_filter_submit" class="btn btn-success" @click="postFilter">Filtrele</button>
 			</div>
 		{% endif %}
 		<div>
@@ -153,7 +153,9 @@
 								  to: ' ~ (options.filter_values[filterKey].to is defined and options.filter_values[filterKey].to is not null ?'"'~options.filter_values[filterKey].to~'"':'null') ~ '
 								},')|raw }}
 						{% else %}
-							{{ (filterKey~':' ~ (options.filter_values[filterKey] is defined and options.filter_values[filterKey] is not null ?'"'~options.filter_values[filterKey]~'"':'null') ~ ',')|raw }}
+							{{ (filterKey~':' ~ (options.filter_values[filterKey] is defined and options.filter_values[filterKey] is not null
+													? ( options.filter_values[filterKey] matches '/^[-+]?[0-9]*\\.?[0-9]+$/' ? options.filter_values[filterKey] : '"'~options.filter_values[filterKey]~'"')
+													: 'null') ~ ',')|raw }}
 						{% endif %}
 					{% endfor %}
 				},
