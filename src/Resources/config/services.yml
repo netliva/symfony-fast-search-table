@@ -22,7 +22,7 @@ services:
 
     netliva_fastSearch_cacheClear:
         class: Netliva\SymfonyFastSearchBundle\EventListener\CacheClearEventListener
-        arguments: [ @service_container]
+        arguments: [ "@service_container"]
         tags:
             - { name: 'doctrine.event_listener', event: 'postPersist', connection: 'default' }
             - { name: 'doctrine.event_listener', event: 'postUpdate', connection: 'default' }
