@@ -167,6 +167,7 @@
 				sort_field: '{{ entityInfos.default_sort_field }}',
 				total: 0,
 				all_count: 0,
+				loaded: 0,
 				cacheAxiosController: null,
 				clearCacheClick: 0,
 				clearCacheTimer: null,
@@ -221,6 +222,7 @@
 				this.loaded_all_records = false;
 				this.total = 0;
 				this.all_count = 0;
+				this.loaded = 0;
 				this.page = 0;
 				this.getRecords();
 			},
@@ -247,6 +249,7 @@
 				this.cache_creating_percent = 0;
 				this.total = 0;
 				this.all_count = 0;
+				this.loaded = 0;
 				if(this.clearCacheClick === 1) { // tek click ise
 					var self = this
 					this.clearCacheTimer = setTimeout(function() {
@@ -322,6 +325,7 @@
 					.then(response => {
 						this.total = response.data.total;
 						this.all_count = response.data.all_count;
+						this.loaded = response.data.loaded;
 
 						if (response.data.records.length > 0)
 						{
