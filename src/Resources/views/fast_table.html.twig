@@ -143,6 +143,10 @@
 		{
 			return {
 				axiosSource: axios.CancelToken.source(),
+				urls : {
+					remove_cache:'{{ options.remove_cache_url }}',
+					search: '{{ options.search_url }}',
+				},
 				page: 0,
 				scrool_element: 0,
 				filter_form: {
@@ -269,7 +273,7 @@
 				this.cacheAxiosController = new AbortController();
 				axios
 					.post(
-						'{{ path('netliva_fast_search_remove_cache', {'key': key, 'force': '__FRC__'}) }}'.replace('__FRC__', force?1:0),
+						this.urls.remove_cache.replace('__FRC__', force?1:0),
 						{}, { signal: this.cacheAxiosController.signal }
 					)
 					.then( response => {
@@ -313,7 +317,7 @@
 				console.log('filters', JSON.parse(JSON.stringify(this.filter_form)));
 				axios
 					.post(
-						'{{ path('netliva_fast_search_list', {'key': key, 'page': '__PAGE__'}) }}'.replace('__PAGE__', this.page),
+						this.urls.search.replace('__PAGE__', this.page),
 						{
 							filters : JSON.parse(JSON.stringify(this.filter_form)),
 							sort_field: this.sort_field,
