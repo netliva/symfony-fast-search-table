@@ -42,6 +42,8 @@ class FastSearchServices extends AbstractExtension
 	public function getFastSearchTable($key, $options = [])
 	{
         $options = array_merge([
+           'remove_cache_url'               => $this->container->get('router')->generate('netliva_fast_search_remove_cache', ['key' => $key, 'force' => '__FRC__']),
+           'search_url'                     => $this->container->get('router')->generate('netliva_fast_search_list', ['key' => $key, 'page' => '__PAGE__']),
            'vue_variables'                  => [],
            'custom_filter_options'          => [],
            'filter_values'                  => [],
