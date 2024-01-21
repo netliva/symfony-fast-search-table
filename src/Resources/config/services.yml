@@ -2,7 +2,7 @@ services:
     Netliva\SymfonyFastSearchBundle\Services\FastSearchServices:
         class: Netliva\SymfonyFastSearchBundle\Services\FastSearchServices
         public: false
-        arguments: ["@doctrine.orm.entity_manager", "@service_container"]
+        autowire: true
         tags:
             - { name: twig.extension }
 

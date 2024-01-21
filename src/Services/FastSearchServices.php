@@ -3,10 +3,12 @@
 namespace Netliva\SymfonyFastSearchBundle\Services;
 
 
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Netliva\SymfonyFastSearchBundle\Events\NetlivaFastSearchEvents;
 use Netliva\SymfonyFastSearchBundle\Events\PrepareRecordEvent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Twig\Environment;
 use Twig\Extension\AbstractExtension;
 use Twig\Markup;
 use Twig\TwigFilter;
@@ -14,9 +16,11 @@ use Twig\TwigFunction;
 
 class FastSearchServices extends AbstractExtension
 {
+	protected $environment;
 	protected $em;
 	protected $container;
-	public function __construct($em, ContainerInterface $container){
+	public function __construct(EntityManagerInterface $em, ContainerInterface $container, Environment $environment){
+		$this->environment = $environment;
 		$this->em = $em;
 		$this->container = $container;
 	}
@@ -59,7 +63,7 @@ class FastSearchServices extends AbstractExtension
         $entityInfos  = $this->container->getParameter('netliva_fast_search.entities');
 
 
-        return $this->container->get('templating')->render('NetlivaSymfonyFastSearchBundle::fast_table.html.twig', [
+        return $this->environment->render('@NetlivaSymfonyFastSearch/fast_table.html.twig', [
             'key'                 => $key,
             'options'             => $options,
             'entityInfos'         => $entityInfos[$key],
