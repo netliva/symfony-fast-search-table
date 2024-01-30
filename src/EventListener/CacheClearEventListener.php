@@ -6,19 +6,17 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\Query;
+use Netliva\SymfonyFastSearchBundle\Services\FastCacheUpdaterServices;
+use Netliva\SymfonyFastSearchBundle\Services\FastSearchServices;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class CacheClearEventListener
 {
-    private $container;
-    private $fss;
-
-    public function __construct (ContainerInterface $container)
-    {
-        $this->container = $container;
-        $this->fss       = $this->container->get('netliva_fastSearchServices');
-        $this->fcu       = $this->container->get('netliva_fastCacheUpdater');
-    }
+    public function __construct (
+        private readonly ContainerInterface $container,
+        private readonly FastSearchServices $fss,
+        private readonly FastCacheUpdaterServices $fcu
+    ) { }
 
     public function postPersist(LifecycleEventArgs $args)
     {
@@ -77,7 +75,11 @@ class CacheClearEventListener
         $fKey = array_shift($aField);
 
         // gelen değer tek bir entity ise
-        if (is_object($entity) && !($entity instanceof PersistentCollection) && !($entity instanceof ArrayCollection) && $subEntity = $this->fss->getEntityValue($entity, $fKey))
+        if (is_object($entity) 
+            && !($entity instanceof PersistentCollection)
+            && !($entity instanceof ArrayCollection)
+            && $subEntity = $this->fss->getEntityValue($entity, $fKey)
+        )
         {
             // eğer field birden fazla derinliğe sahip ise içe doğru kontrole devam et
             if (count($aField))
@@ -93,7 +95,7 @@ class CacheClearEventListener
                     $this->fcu->updateData($item);
                 return;
             }
-
+            
             // eğer bulunan değer tek bir entity ise;
             $this->fcu->updateData($subEntity);
             return;

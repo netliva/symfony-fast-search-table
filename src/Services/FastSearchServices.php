@@ -3,10 +3,13 @@
 namespace Netliva\SymfonyFastSearchBundle\Services;
 
 
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Netliva\SymfonyFastSearchBundle\Events\NetlivaFastSearchEvents;
 use Netliva\SymfonyFastSearchBundle\Events\PrepareRecordEvent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\Routing\RouterInterface;
+use Twig\Environment;
 use Twig\Extension\AbstractExtension;
 use Twig\Markup;
 use Twig\TwigFilter;
@@ -14,12 +17,12 @@ use Twig\TwigFunction;
 
 class FastSearchServices extends AbstractExtension
 {
-	protected $em;
-	protected $container;
-	public function __construct($em, ContainerInterface $container){
-		$this->em = $em;
-		$this->container = $container;
-	}
+	public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly Environment $environment,
+        private readonly RouterInterface $router,
+        private readonly ContainerInterface $container
+    ){ }
 
 	public function getFunctions()
 	{
@@ -42,9 +45,12 @@ class FastSearchServices extends AbstractExtension
 	public function getFastSearchTable($key, $options = [])
 	{
         $options = array_merge([
-           'remove_cache_url'               => $this->container->get('router')->generate('netliva_fast_search_remove_cache', ['key' => $key, 'force' => '__FRC__']),
-           'search_url'                     => $this->container->get('router')->generate('netliva_fast_search_list', ['key' => $key, 'page' => '__PAGE__']),
+           'remove_cache_url'               => $this->router->generate('netliva_fast_search_remove_cache', ['key' => $key, 'force' => '__FRC__']),
+           'search_url'                     => $this->router->generate('netliva_fast_search_list', ['key' => $key, 'page' => '__PAGE__']),
            'vue_variables'                  => [],
+           'components'                     => [],
+           'js_variables'                   => [],
+           'js_methods'                     => [],
            'custom_filter_options'          => [],
            'filter_values'                  => [],
            'post_values'                    => [],
@@ -53,13 +59,15 @@ class FastSearchServices extends AbstractExtension
            'record_variable_name'           => 'entity',
            'table_thead_cells_vue_template' => '<th>ID</th>',
            'table_tbody_cells_vue_template' => '<td>[[entity.id]]</td>',
+           'default_sorting_direction'      => null,
+           'default_sort_field'             => null,
         ], $options);
 
 
         $entityInfos  = $this->container->getParameter('netliva_fast_search.entities');
 
 
-        return $this->container->get('templating')->render('NetlivaSymfonyFastSearchBundle::fast_table.html.twig', [
+        return $this->environment->render('@NetlivaSymfonyFastSearch/fast_table.html.twig', [
             'key'                 => $key,
             'options'             => $options,
             'entityInfos'         => $entityInfos[$key],
@@ -331,24 +339,32 @@ class FastSearchServices extends AbstractExtension
         return $key;
     }
 
-    public function getEntityValue ($entity, string $field)
+    public function _getEntityValue ($entity, string $field)
     {
-        if (method_exists($entity, 'get'.ucfirst($field)))
-        {
+        if (is_object($entity) && method_exists($entity, 'get'.ucfirst($field)))
             return $entity->{'get'.ucfirst($field)}();
-        }
 
-        if (method_exists($entity, 'is'.ucfirst($field)))
-        {
+        if (is_object($entity) && method_exists($entity, 'is'.ucfirst($field)))
             return $entity->{'is'.ucfirst($field)}();
-        }
 
-        if (method_exists($entity, $field))
-        {
-            return $entity->{ucfirst($field)}();
-        }
+        if (is_object($entity) && method_exists($entity, $field))
+            return $entity->{$field}();
+
+        if (is_array($entity) && key_exists($field, $entity))
+            return $entity[$field];
 
         return null;
+    }
+
+    public function getEntityValue ($entity, string $field)
+    {
+        $aField = explode('.', $field);
+        $fKey = array_shift($aField);
+        $value = $this->_getEntityValue($entity, $fKey);
+        if ($value && (is_object($value) || is_array($value)) && count($aField))
+            $value = $this->getEntityValue($value, implode('.', $aField));
+
+        return $value;
     }
 
     public function getEntObj ($entity, $fields, $entityKey)
@@ -356,7 +372,7 @@ class FastSearchServices extends AbstractExtension
         $temp = ['id'=>$entity->getId()];
         foreach ($fields as $fKey => $info)
         {
-            $temp[$fKey] = $this->getEntityValue($entity, $fKey);
+            $temp[$fKey] = $this->getEntityValue($entity, $info['field']??$fKey);
             if ($temp[$fKey] instanceof \DateTime)
                 $temp[$fKey] = $temp[$fKey]->format('c');
 

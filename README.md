@@ -165,6 +165,28 @@ kullanmamız gerekiyor.
 
 **vue_variables** ile vue template içinde kullanmak isteyeceğiniz twig değişkenlerini gönderebilirsiniz.
 
+**js_variables** ile vue template içinde kullanmak isteyeceğiniz javascript değişkenlerini gönderebilirsiniz.
+
+**js_methods** ile vue template içinde kullanmak isteyeceğiniz javascript fonksiyonlarını gönderebilirsiniz.
+
+```
+//...
+'js_methods' : {
+	moment: '(date) => window.moment(date)',
+}
+//...
+```
+**components** ile vue template içinde import etmek isteyeceğiniz componentleri gönderebilirsiniz.
+
+```
+//...
+'js_methods' : {
+	'ComponentAdi': asset('vue_components/component_dosyasi.js'),
+}
+//...
+```
+
+
 
 ### Veri Manipülasyonu
 

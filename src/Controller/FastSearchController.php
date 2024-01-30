@@ -5,19 +5,25 @@ namespace Netliva\SymfonyFastSearchBundle\Controller;
 use Doctrine\ORM\Query;
 use Netliva\SymfonyFastSearchBundle\Events\BeforeViewEvent;
 use Netliva\SymfonyFastSearchBundle\Events\NetlivaFastSearchEvents;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Netliva\SymfonyFastSearchBundle\Services\FastSearchServices;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
-class FastSearchController extends Controller
+class FastSearchController extends AbstractController
 {
+    public function __construct (
+        private readonly FastSearchServices $fss,
+        private readonly EventDispatcherInterface $dispatcher
+    ) { }
+
     /**
      * @Route("/list/{key}/{page}", name="netliva_fast_search_list", defaults={"page": 1})
      */
     public function listAction (Request $request, $key, $page)
     {
-        $fss          = $this->get('netliva_fastSearchServices');
         $entityInfos  = $this->getParameter('netliva_fast_search.entities');
         $cachePath    = $this->getParameter('netliva_fast_search.cache_path');
         $limitPerPage = $this->getParameter('netliva_fast_search.default_limit_per_page');
@@ -35,15 +41,28 @@ class FastSearchController extends Controller
         $limitPerPage = $entityInfos[$key]['limit_per_page'] ?: $limitPerPage;
         $records      = json_decode(file_get_contents($filePath), true);
         $all          = count($records);
+        
         if (!$records) $records = [];
-        $records      = $fss->filterRecords($records, $content['filters'], $entityInfos[$key]['filters']);
-        $records      = $fss->sort($records, $content['sort_field'], $content['sort_direction']);
+        if ($content && key_exists('filters', $content))
+        {
+            $records = $this->fss->filterRecords(
+                $records,
+                $content['filters'],
+                $entityInfos[$key]['filters']
+            );
+        }
+
+        $event = new BeforeViewEvent($records, $key, $entityInfos[$key], $content);
+        $this->dispatcher->dispatch(NetlivaFastSearchEvents::BEFORE_SORTING, $event);
+
+        if ($content && key_exists('sort_field', $content) && key_exists('sort_direction', $content))
+            $records = $this->fss->sort($event->getRecords(), $content['sort_field'], $content['sort_direction']);
+
         $total        = count($records);
         $records      = array_slice($records, $limitPerPage * ($page - 1), $limitPerPage);
 
-        $eventDispatcher = $this->container->get('event_dispatcher');
         $event = new BeforeViewEvent($records, $key, $entityInfos[$key], $content);
-        $eventDispatcher->dispatch(NetlivaFastSearchEvents::BEFORE_VIEW, $event);
+        $this->dispatcher->dispatch(NetlivaFastSearchEvents::BEFORE_VIEW, $event);
 
 
         return new JsonResponse(['records'=>$event->getRecords(), 'loaded' => $limitPerPage * $page, 'total' => $total, 'all_count' => $all]);
@@ -57,8 +76,6 @@ class FastSearchController extends Controller
     {
         $entityInfos = $this->getParameter('netliva_fast_search.entities');
         $cachePath   = $this->getParameter('netliva_fast_search.cache_path');
-        $fss         = $this->get('netliva_fastSearchServices');
-
 
         /** @var EntityManagerInterface $em */
         $em = $this->getDoctrine()->getManager();
@@ -99,7 +116,7 @@ class FastSearchController extends Controller
             $qb = $em->createQueryBuilder();
             $qb->select('count(ent.id)');
             $qb->from($entityInfos[$key]['class'],'ent');
-            $fss->addWhereToQuery($qb, $entityInfos[$key]['where']);
+            $this->fss->addWhereToQuery($qb, $entityInfos[$key]['where']);
 
             $info = (object)[
                 'count'         => $qb->getQuery()->getSingleScalarResult(),
@@ -120,14 +137,14 @@ class FastSearchController extends Controller
         $qb = $em->getRepository($entityInfos[$key]['class'])->createQueryBuilder('ent');
         $qb->setMaxResults($limit);
         $qb->setFirstResult($info->offset);
-        $fss->addWhereToQuery($qb, $entityInfos[$key]['where']);
+        $this->fss->addWhereToQuery($qb, $entityInfos[$key]['where']);
         $query = $qb->getQuery();
         // $query->setHint(Query::HINT_FORCE_PARTIAL_LOAD, true);
         $say = $info->offset;
         foreach ($query->getResult() as $entity)
         {
             $say++;
-            $data = $fss->getEntObj($entity, $entityInfos[$key]['fields'], $key);
+            $data = $this->fss->getEntObj($entity, $entityInfos[$key]['fields'], $key);
             unset($entity);
             fputs($dataFile, json_encode($data).($say==$info->count?'':',').PHP_EOL);
             unset($data);
@@ -168,7 +185,7 @@ class FastSearchController extends Controller
 
         $data = [];
         foreach ($entities as $entity)
-            $data[] = $fss->getEntObj($entity, $entityInfos[$key]['fields'], $key);
+            $data[] = $this->fss->getEntObj($entity, $entityInfos[$key]['fields'], $key);
 
         if(!is_dir($cachePath))
             mkdir($cachePath, 0777, true);

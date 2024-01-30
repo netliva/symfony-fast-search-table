@@ -4,18 +4,26 @@ namespace Netliva\SymfonyFastSearchBundle\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query;
-use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
+use Netliva\SymfonyFastSearchBundle\Services\FastSearchServices;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
-class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
+class FastTableDumpDataToJsonCommand extends Command
 {
-    /**
-     * {@inheritdoc}
-     */
+    public function __construct (
+        private readonly FastSearchServices $fss,
+        private readonly EntityManagerInterface $em,
+        private readonly ContainerInterface $container,
+    ) {
+        parent::__construct();
+    }
+
+
     protected function configure()
     {
         // Her saba saat 5'te cron çalışıyor
@@ -31,7 +39,7 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
     {
         if (null === $input->getArgument('entity-name'))
         {
-            $entityNames = array_keys($this->getContainer()->getParameter('netliva_fast_search.entities'));
+            $entityNames = array_keys($this->container->getParameter('netliva_fast_search.entities'));
             $argument    = $this->getDefinition()->getArgument('entity-name');
             $question    = new Question($argument->getDescription());
             $question->setAutocompleterValues($entityNames);
@@ -62,9 +70,8 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
         $limit  = $input->getOption('limit');
         $output->writeln($entKey. ' için veriler json´a yazılıyor!');
 
-        $fss         = $this->getContainer()->get('netliva_fastSearchServices');
-        $entityInfos = $this->getContainer()->getParameter('netliva_fast_search.entities');
-        $cachePath   = $this->getContainer()->getParameter('netliva_fast_search.cache_path');
+        $entityInfos = $this->container->getParameter('netliva_fast_search.entities');
+        $cachePath   = $this->container->getParameter('netliva_fast_search.cache_path');
 
         if(!is_dir($cachePath))
             mkdir($cachePath, 0777, true);
@@ -74,13 +81,10 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
         if(file_exists($tempPath))
             unlink($tempPath);
 
-        /** @var EntityManagerInterface $em */
-        $em = $this->getContainer()->get('doctrine')->getManager();
-
-        $qb = $em->createQueryBuilder();
+        $qb = $this->em->createQueryBuilder();
         $qb->select('count(ent.id)');
         $qb->from($entityInfos[$entKey]['class'],'ent');
-        $fss->addWhereToQuery($qb, $entityInfos[$entKey]['where']);
+        $this->fss->addWhereToQuery($qb, $entityInfos[$entKey]['where']);
 
         $count = $qb->getQuery()->getSingleScalarResult();
 
@@ -96,18 +100,18 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
         // $data = [];
         for ($i = 0; $i<ceil($count/$limit); $i++)
         {
-            $em->clear();
-            $qb = $em->getRepository($entityInfos[$entKey]['class'])->createQueryBuilder('ent');
+            $this->em->clear();
+            $qb = $this->em->getRepository($entityInfos[$entKey]['class'])->createQueryBuilder('ent');
             $qb->setMaxResults($limit);
             $qb->setFirstResult($i*$limit);
-            $fss->addWhereToQuery($qb, $entityInfos[$entKey]['where']);
+            $this->fss->addWhereToQuery($qb, $entityInfos[$entKey]['where']);
             $query = $qb->getQuery();
             // $query->setHint(Query::HINT_FORCE_PARTIAL_LOAD, true);
             foreach ($query->getResult() as $entity)
             {
                 $say++;
-                // $data[] = $fss->getEntObj($entity, $entityInfos[$entKey]['fields'], $entKey);
-                $data = $fss->getEntObj($entity, $entityInfos[$entKey]['fields'], $entKey);
+                // $data[] = $this->fss->getEntObj($entity, $entityInfos[$entKey]['fields'], $entKey);
+                $data = $this->fss->getEntObj($entity, $entityInfos[$entKey]['fields'], $entKey);
                 unset($entity);
                 fwrite($dataFile, json_encode($data).($say==$count?'':',').PHP_EOL);
                 unset($data);
