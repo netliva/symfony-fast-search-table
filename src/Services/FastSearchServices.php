@@ -101,8 +101,14 @@ class FastSearchServices extends AbstractExtension
 
     }
 
+    private $recordCountsForDecreaseFromTotalCount = 0;
+    public function getRecordCountsForDecreaseFromTotalCount (): int
+    {
+        return $this->recordCountsForDecreaseFromTotalCount;
+    }
     public function filterRecords ($records, $filter, $filterData)
     {
+        $this->recordCountsForDecreaseFromTotalCount = 0;
         return array_filter($records, function ($record) use ($filter, $filterData)
         {
             foreach ($filter as $fKey => $filterValue)
@@ -158,6 +164,15 @@ class FastSearchServices extends AbstractExtension
                         }
                         else $recValue = $record[$field];
 
+                        if (
+                            ($filterData[$fKey]['type'] == 'text' || $filterData[$fKey]['type'] == 'hidden')
+                            && (!$filterData[$fKey]['exp'] || in_array($filterData[$fKey]['exp'], ['like']))
+                            && is_array($recValue)
+                        )
+                        {
+                            $recValue = implode(', ', $recValue);
+                        }
+                        dump($field, $recValue);
 
 
                         if (
@@ -225,7 +240,13 @@ class FastSearchServices extends AbstractExtension
                         }
                     }
 
-                    if (!$find) return false;
+                    if (!$find)
+                    {
+
+                        if ($filterData[$fKey]['decrease_from_total_count'])
+                            $this->recordCountsForDecreaseFromTotalCount++;
+                        return false;
+                    }
                 }
 
             }

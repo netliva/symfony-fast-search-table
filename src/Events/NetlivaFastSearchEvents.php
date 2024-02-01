@@ -16,7 +16,7 @@ final class NetlivaFastSearchEvents
 	 *
 	 * @Event("Netliva\SymfonyFastSearchBundle\Events\BeforeViewEvent")
 	 */
-	const  BEFORE_SORTING = 'netliva_fast_search.before_sorting';
+	const  BEFORE_FILTER = 'netliva_fast_search.before_filter';
 
 	/**
 	 * Veriler ekrana basılmadan hemen önce verilerin düzenlenmesi için

@@ -58,6 +58,7 @@ class Configuration implements ConfigurationInterface
 										->scalarNode('title')->cannotBeEmpty()->end()
 										->scalarNode('type')->cannotBeEmpty()->isRequired()->end()
 										->scalarNode('exp')->defaultValue(null)->end()
+										->booleanNode('decrease_from_total_count')->defaultFalse()->end()
 										->scalarNode('input_class')->defaultValue("")->end()
                                         ->arrayNode('fields')->defaultValue([])->prototype('scalar')->end()->end()
                                         ->arrayNode('options')->defaultValue([])->prototype('scalar')->end()->end()

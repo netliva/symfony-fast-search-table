@@ -40,9 +40,14 @@ class FastSearchController extends AbstractController
 
         $limitPerPage = $entityInfos[$key]['limit_per_page'] ?: $limitPerPage;
         $records      = json_decode(file_get_contents($filePath), true);
-        $all          = count($records);
-        
         if (!$records) $records = [];
+
+        $all = count($records);
+
+        $event = new BeforeViewEvent($records, $key, $entityInfos[$key], $content);
+        $this->dispatcher->dispatch(NetlivaFastSearchEvents::BEFORE_FILTER, $event);
+        $records = $event->getRecords();
+        
         if ($content && key_exists('filters', $content))
         {
             $records = $this->fss->filterRecords(
@@ -50,13 +55,11 @@ class FastSearchController extends AbstractController
                 $content['filters'],
                 $entityInfos[$key]['filters']
             );
+            $all -= $this->fss->getRecordCountsForDecreaseFromTotalCount();
         }
 
-        $event = new BeforeViewEvent($records, $key, $entityInfos[$key], $content);
-        $this->dispatcher->dispatch(NetlivaFastSearchEvents::BEFORE_SORTING, $event);
-
         if ($content && key_exists('sort_field', $content) && key_exists('sort_direction', $content))
-            $records = $this->fss->sort($event->getRecords(), $content['sort_field'], $content['sort_direction']);
+            $records = $this->fss->sort($records, $content['sort_field'], $content['sort_direction']);
 
         $total        = count($records);
         $records      = array_slice($records, $limitPerPage * ($page - 1), $limitPerPage);
