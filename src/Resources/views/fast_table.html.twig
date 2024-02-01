@@ -259,9 +259,9 @@
 
 				this.resetList();
 			},
-			clearCache (e)
+			clearCache (e=null)
 			{
-				e.preventDefault();
+				if (e) e.preventDefault();
 				if (this.cache_creating)
 					this.cacheAxiosController.abort();
 
@@ -347,18 +347,25 @@
 						this.all_count = response.data.all_count;
 						this.loaded = response.data.loaded;
 
-						if (response.data.records.length > 0)
+						if (response.data.error && response.data.error == 'file_not_found')
 						{
-							this.entities.push(...response.data.records);
-							const loadedDataEvent = new CustomEvent("data_loaded", {
-								detail: {
-									data: response.data.records
-								},
-								bubbles: true,
-								cancelable: true,
-								composed: false,
-							});
-							document.querySelector("#fastTableApp_{{ key }}").dispatchEvent(loadedDataEvent);
+							this.clearCache();
+						}
+						else
+						{
+							if (response.data.records.length > 0)
+							{
+								this.entities.push(...response.data.records);
+								const loadedDataEvent = new CustomEvent("data_loaded", {
+									detail: {
+										data: response.data.records
+									},
+									bubbles: true,
+									cancelable: true,
+									composed: false,
+								});
+								document.querySelector("#fastTableApp_{{ key }}").dispatchEvent(loadedDataEvent);
+							}
 						}
 
 						this.in_action = false;

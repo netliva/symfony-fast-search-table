@@ -29,12 +29,12 @@ class FastSearchController extends AbstractController
         $limitPerPage = $this->getParameter('netliva_fast_search.default_limit_per_page');
 
         if (!key_exists($key, $entityInfos))
-            return new JsonResponse(['records'=>[], 'loaded' => 0, 'total' => 0]);
+            return new JsonResponse(['records'=>[], 'loaded' => 0, 'total' => 0, 'all_count' => 0, 'error' => 'key_not_found']);
 
         $filePath = $cachePath.'/'.$key.'.json';
 
         if(!file_exists($filePath))
-            return new JsonResponse(['records'=>[], 'loaded' => 0, 'total' => 0]);
+            return new JsonResponse(['records'=>[], 'loaded' => 0, 'total' => 0, 'all_count' => 0, 'error' => 'file_not_found']);
 
         $content      = json_decode($request->getContent(), true);
 
@@ -68,7 +68,7 @@ class FastSearchController extends AbstractController
         $this->dispatcher->dispatch(NetlivaFastSearchEvents::BEFORE_VIEW, $event);
 
 
-        return new JsonResponse(['records'=>$event->getRecords(), 'loaded' => $limitPerPage * $page, 'total' => $total, 'all_count' => $all]);
+        return new JsonResponse(['records'=>$event->getRecords(), 'loaded' => $limitPerPage * $page, 'total' => $total, 'all_count' => $all, 'error'=>false]);
     }
 
 
