@@ -172,8 +172,6 @@ class FastSearchServices extends AbstractExtension
                         {
                             $recValue = implode(', ', $recValue);
                         }
-                        dump($field, $recValue);
-
 
                         if (
                             (
