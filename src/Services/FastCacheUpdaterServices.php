@@ -9,30 +9,30 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class FastCacheUpdaterServices
 {
-	protected $em;
-	protected $fss;
-	protected $container;
-	public function __construct(EntityManagerInterface $em, ContainerInterface $container){
-		$this->em = $em;
-		$this->container = $container;
-        $this->fss       = $this->container->get('netliva_fastSearchServices');
-    }
+	public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly FastSearchServices $fss,
+        private readonly ContainerInterface $container
+    ){ }
 
 
     private $data = [];
     private $dataChanged = false;
     private $entityInfo  = null;
     private $entityKey  = null;
-    public function openData ($entKey, $entInfo)
+    private $filePath  = null;
+    public function openData ($entKey, $entInfo, $cachePath = null)
     {
-        $cachePath = $this->container->getParameter('netliva_fast_search.cache_path');
-        $filePath  = $cachePath.'/'.$entKey.'.json';
-        if(!file_exists($filePath))
+        if (!$cachePath)
+            $cachePath = $this->container->getParameter('netliva_fast_search.cache_path');
+        $this->filePath  = $cachePath.'/'.$entKey.'.json';
+
+        if(!file_exists($this->filePath))
             return false;
 
         $this->entityKey   = $entKey;
         $this->entityInfo  = $entInfo;
-        $this->data        = json_decode(file_get_contents($filePath), true);
+        $this->data        = json_decode(file_get_contents($this->filePath), true);
         $this->dataChanged = false;
         if (!is_array($this->data)) $this->data = [];
 
@@ -40,7 +40,10 @@ class FastCacheUpdaterServices
     }
     public function addData ($entity)
     {
-        if (get_class($entity) == $this->entityInfo['class'])
+        if (is_numeric($entity))
+            $entity = $this->em->getRepository($this->entityInfo['class'])->find($entity);
+
+        if ($entity && is_object($entity) && get_class($entity) == $this->entityInfo['class'])
         {
             $this->data[] = $this->fss->getEntObj($entity, $this->entityInfo['fields'], $this->entityKey);
             $this->dataChanged = true;
@@ -48,7 +51,10 @@ class FastCacheUpdaterServices
     }
     public function updateData ($entity)
     {
-        if (get_class($entity) == $this->entityInfo['class'])
+        if (is_numeric($entity))
+            $entity = $this->em->getRepository($this->entityInfo['class'])->find($entity);
+
+        if ($entity && is_object($entity) && get_class($entity) == $this->entityInfo['class'])
         {
             $this->data = $this->fss->sort($this->data, 'id');
             $key  = $this->fss->binarySearch($this->data, $entity->getId(), 'id', 'strcmp', count($this->data) - 1, 0, true);
@@ -61,7 +67,10 @@ class FastCacheUpdaterServices
     }
     public function removeData ($entity)
     {
-        if (get_class($entity) == $this->entityInfo['class'])
+        if (is_numeric($entity))
+            $entity = $this->em->getRepository($this->entityInfo['class'])->find($entity);
+
+        if ($entity && is_object($entity) && get_class($entity) == $this->entityInfo['class'])
         {
             $this->data = $this->fss->sort($this->data, 'id');
             $key  = $this->fss->binarySearch($this->data, $entity->getId(), 'id', 'strcmp', count($this->data) - 1, 0, true);
@@ -76,12 +85,10 @@ class FastCacheUpdaterServices
     {
         if ($this->dataChanged)
         {
-            $cachePath = $this->container->getParameter('netliva_fast_search.cache_path');
-            $filePath  = $cachePath.'/'.$this->entityKey.'.json';
-            if(!file_exists($filePath))
+            if(!file_exists($this->filePath))
                 return false;
 
-            file_put_contents($filePath, json_encode($this->data));
+            file_put_contents($this->filePath, json_encode($this->data));
         }
     }
 

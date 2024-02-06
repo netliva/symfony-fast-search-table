@@ -1,28 +1,22 @@
 services:
-    Netliva\SymfonyFastSearchBundle\Services\FastSearchServices:
-        class: Netliva\SymfonyFastSearchBundle\Services\FastSearchServices
-        public: false
+    _defaults:
         autowire: true
-        tags:
-            - { name: twig.extension }
-
-    netliva_fastSearchServices:
-        alias: Netliva\SymfonyFastSearchBundle\Services\FastSearchServices
-        public: true
-
-    Netliva\SymfonyFastSearchBundle\Services\FastCacheUpdaterServices:
-        class: Netliva\SymfonyFastSearchBundle\Services\FastCacheUpdaterServices
+        autoconfigure: true
         public: false
-        arguments: ["@doctrine.orm.entity_manager", "@service_container"]
 
-    netliva_fastCacheUpdater:
-        alias: Netliva\SymfonyFastSearchBundle\Services\FastCacheUpdaterServices
-        public: true
+    Netliva\SymfonyFastSearchBundle\Controller\:
+        resource: '../../Controller/'
+        tags: ['controller.service_arguments']
 
+    Netliva\SymfonyFastSearchBundle\Services\:
+        resource: '../../Services/'
+
+    Netliva\SymfonyFastSearchBundle\Command\:
+        resource: '../../Command/'
+        tags: ['console.command']
 
     netliva_fastSearch_cacheClear:
         class: Netliva\SymfonyFastSearchBundle\EventListener\CacheClearEventListener
-        arguments: [ "@service_container"]
         tags:
             - { name: 'doctrine.event_listener', event: 'postPersist', connection: 'default' }
             - { name: 'doctrine.event_listener', event: 'postUpdate', connection: 'default' }

@@ -1,10 +1,10 @@
-<div id="fastTableApp_{{ key }}">
+<div id="fastTableApp_{{ key }}" style="display: none;">
 	<form class="d-flex align-items-center justify-content-center pad10A p-3" @submit="postFilter">
 		{% for filterKey, filterInfo in entityInfos.filters %}
 			{% if filterInfo.type == 'hidden' %}
 				<input type="hidden" v-model="filter_form.{{ filterKey }}">
 			{% else %}
-				<div id="fastTableApp_{{ key }}_filter_{{ filterKey }}" class="d-flex align-items-center justify-content-center">
+				<div id="fastTableApp_{{ key }}_filter_{{ filterKey }}" class="fast_table_filter_item d-flex align-items-center justify-content-center">
 					<strong class="nowrap">{{ filterInfo.title }} :</strong>
 					{% if filterInfo.type == 'text' %}
 						<input class="{{ default_input_class }} {{ filterInfo.input_class }}" v-model="filter_form.{{ filterKey }}">
@@ -23,7 +23,7 @@
 			{% endif %}
 		{% endfor %}
 		{% if entityInfos.filters|length %}
-			<div>
+			<div class="fast_table_filter_item">
 				<button id="fastTableApp_{{ key }}_filter_submit" class="btn btn-success" @click="postFilter">Filtrele</button>
 			</div>
 		{% endif %}
@@ -33,7 +33,7 @@
 			<span v-else><sup>[[new Intl.NumberFormat('tr-TR', {maximumFractionDigits:2 }).format(total)]]</sup>/<sub>[[new Intl.NumberFormat('tr-TR', {maximumFractionDigits:2 }).format(all_count)]]</sub></span>
 		</div>
 		<div>
-			<button class="btn btn-secondary btn-xs" style="height:34px; line-height:1.2;" @click="clearCache">
+			<button class="btn btn-secondary btn-xs" id="clearCacheBtn" @click="clearCache">
 				Ön Belleği<br>Temizle
 			</button>
 		</div>
@@ -133,13 +133,23 @@
 	#fastTableApp_{{ key }} form .d-flex { gap:10px; white-space:nowrap; }
 	.placeholder-item {border-radius: 4px;height: 17px;position: relative;overflow: hidden;background: #e8e8e8;}
 	.placeholder-item::before {content: '';display: block;position: absolute;left: -150px;top: 0;height: 100%;width: 150px;background: linear-gradient(to right, transparent 0%, #f9f9f9 50%, transparent 100%);animation: load 1.5s cubic-bezier(.37,-0.01,.26,1.08) infinite;}
-	@keyframes load { from {left: -150px;} to   {left: 100%;} }
+	@keyframes load { from {left: -150px;} to  {left: 100%;} }
+	#clearCacheBtn { height: 34px; line-height: 1.2; font-size: 0.9em;}
 </style>
 
-<script>
+<script type="module">
+	{% for key, value in options.components %}
+		import {{ key }} from '{{ value }}';
+	{% endfor %}
 	const { createApp } = Vue
 	window.fastTableApp_{{ key }} = createApp({
-		delimiters: ["[[", "]]"], data ()
+		delimiters: ["[[", "]]"],
+		components: {
+			{% for key, value in options.components %}
+				{{ key~',' }}
+			{% endfor %}
+		},
+		data ()
 		{
 			return {
 				axiosSource: axios.CancelToken.source(),
@@ -167,8 +177,8 @@
 				loaded_all_records: false,
 				in_action: false,
 				cache_creating: false,
-				sort_direction: '{{ entityInfos.default_sorting_direction }}',
-				sort_field: '{{ entityInfos.default_sort_field }}',
+				sort_direction: '{{ options.default_sorting_direction??entityInfos.default_sorting_direction }}',
+				sort_field: '{{ options.default_sort_field??entityInfos.default_sort_field }}',
 				total: 0,
 				all_count: 0,
 				loaded: 0,
@@ -178,10 +188,16 @@
 				{% for key, value in options.vue_variables %}
 					{{ (key ~ ':'~ (value|json_encode)~',')|raw }}
 				{% endfor %}
+				{% for key, value in options.js_variables %}
+					{{ (key ~ ':'~ value ~',')|raw }}
+				{% endfor %}
 			}
 		},
 	  	methods:
 		{
+			{% for key, value in options.js_methods %}
+				{{ (key ~ ':'~ value ~',')|raw }}
+			{% endfor %}
 			chackAnotherPages ()
 			{
 				if (!this.scrool_element)
@@ -243,9 +259,9 @@
 
 				this.resetList();
 			},
-			clearCache (e)
+			clearCache (e=null)
 			{
-				e.preventDefault();
+				if (e) e.preventDefault();
 				if (this.cache_creating)
 					this.cacheAxiosController.abort();
 
@@ -331,18 +347,25 @@
 						this.all_count = response.data.all_count;
 						this.loaded = response.data.loaded;
 
-						if (response.data.records.length > 0)
+						if (response.data.error && response.data.error == 'file_not_found')
 						{
-							this.entities.push(...response.data.records);
-							const loadedDataEvent = new CustomEvent("data_loaded", {
-								detail: {
-									data: response.data.records
-								},
-								bubbles: true,
-								cancelable: true,
-								composed: false,
-							});
-							document.querySelector("#fastTableApp_{{ key }}").dispatchEvent(loadedDataEvent);
+							this.clearCache();
+						}
+						else
+						{
+							if (response.data.records.length > 0)
+							{
+								this.entities.push(...response.data.records);
+								const loadedDataEvent = new CustomEvent("data_loaded", {
+									detail: {
+										data: response.data.records
+									},
+									bubbles: true,
+									cancelable: true,
+									composed: false,
+								});
+								document.querySelector("#fastTableApp_{{ key }}").dispatchEvent(loadedDataEvent);
+							}
 						}
 
 						this.in_action = false;
@@ -363,7 +386,10 @@
 			window.removeEventListener("scroll", this.chackAnotherPages);
 			this.scrool_element.removeEventListener("scroll", this.chackAnotherPages);
 		},
-	  	mounted () { this.getRecords(); }
+	  	mounted () {
+			this.getRecords();
+			document.getElementById('fastTableApp_{{ key }}').style.display = 'block';
+		}
 
 	}).mount('#fastTableApp_{{ key }}')
 </script>

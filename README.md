@@ -100,13 +100,16 @@ netliva_symfony_fast_search:
       where: # Önbelleğe alınacak ve listelenecek verileri kısıtlamak için. Bu kısıtlamalar sonrası kısıtlanan veriler hiç önbelleğe alınmaz.
         - { field: createAt, expr: gte, value: -2 years, valueType: date } # son 2 yıla ait verileri önbelleğe alır
       fields: # ön belleğe alınacak verilerin listesi 
-        name: { title: 'Adı' }  # entitiy'deki field isimleri key olarak eklenerek liste oluşturulur.
+        # entitiy'deki field isimleri key olarak eklenerek liste oluşturulur.
+        catId: { title: 'Kategori Idsi', field: 'category.id' }  # ilişkili entity'de id field'ını cache'e dahil ediyoruz
+        name: { title: 'Adı' }  
         surname: { title: 'Soyadı' }  
         birthday: { title: 'Doğum Tarihi' } # tüm tarihler ISO 8601 tarih formati ile önbelleğe kaydedilir (2004-02-12T15:19:21+00:00 gibi)
         createAt: { title: 'Oluşturma Tarihi' }
         age: { title: 'Yaşı' } # entitiy'de olmayan veriyi ön belleğe kaydetmek için maniplasyon kullnacağız.
         # ... 
       filters: # Listeleme tablosu üzerindeki filtreleme alanının oluşturulması
+        category: { type: 'hidden', fields: [catId], exp: eq, decrease_from_total_count: true } # kategory id'sine göre filtreleme yapıyoruz, filtrelenen öğeler toplam sayıdan düşülecek.
         search_box: { type: 'text', title: 'Ara', fields: [name, surname] }
         create_range: { type: 'date_range', title: 'Oluşturma', fields: [createAt] }
 
@@ -138,6 +141,9 @@ netliva_symfony_fast_search:
         'table_columns' : tableColumns,
         'vue_variables' : {
             vueVarName: twigVarName,
+        },
+        'filter_values' : {
+           category: category.id,
         }
     }) }}
 </div>
@@ -157,13 +163,37 @@ netliva_symfony_fast_search:
 	</td>
 {% endmacro %}
 ```
-**table_tbody_cells_vue_template** değişkeni içinde bir vue template göndermek gerekiyor. Bunun için twig makro kullanıyoruz.
+**table_tbody_cells_vue_template :** değişkeni içinde bir vue template göndermek gerekiyor. Bunun için twig makro kullanıyoruz.
 twig parentezlerinin **{{ }}** vue parantezleri ile karışmaması için; vue parantezlerini **[[ ]]** şeklinde köşeli parantez olarak 
 kullanmamız gerekiyor.
 
-**record_variable_name** her bir listelenecek kaydın vue template içinde hangi değişken tanımıyla alacağınızı tanımlayacağınız bölüm.
+**filter_values :** oluşturulan filtrelemelerin varsayılan değeri buradanbelirlenir. Hidden filtrelemelrin değerleri de burdan gönderilir..
 
-**vue_variables** ile vue template içinde kullanmak isteyeceğiniz twig değişkenlerini gönderebilirsiniz.
+**record_variable_name :** her bir listelenecek kaydın vue template içinde hangi değişken tanımıyla alacağınızı tanımlayacağınız bölüm.
+
+**vue_variables :** ile vue template içinde kullanmak isteyeceğiniz twig değişkenlerini gönderebilirsiniz.
+
+**js_variables :** ile vue template içinde kullanmak isteyeceğiniz javascript değişkenlerini gönderebilirsiniz.
+
+**js_methods :** ile vue template içinde kullanmak isteyeceğiniz javascript fonksiyonlarını gönderebilirsiniz.
+
+```
+//...
+'js_methods' : {
+	moment: '(date) => window.moment(date)',
+}
+//...
+```
+**components** ile vue template içinde import etmek isteyeceğiniz componentleri gönderebilirsiniz.
+
+```
+//...
+'js_methods' : {
+	'ComponentAdi': asset('vue_components/component_dosyasi.js'),
+}
+//...
+```
+
 
 
 ### Veri Manipülasyonu
