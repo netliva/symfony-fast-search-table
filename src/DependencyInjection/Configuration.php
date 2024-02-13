@@ -17,8 +17,10 @@ class Configuration implements ConfigurationInterface
      */
     public function getConfigTreeBuilder()
     {
-        $treeBuilder = new TreeBuilder();
-        $rootNode = $treeBuilder->root('netliva_symfony_fast_search');
+        $treeBuilder = new TreeBuilder('netliva_symfony_fast_search');
+        $rootNode = method_exists(TreeBuilder::class, 'getRootNode')
+            ? $treeBuilder->getRootNode()
+            : $treeBuilder->root('netliva_symfony_fast_search');
 
 
         $rootNode
