@@ -2,7 +2,7 @@
 namespace Netliva\SymfonyFastSearchBundle\Events;
 
 
-use Symfony\Component\EventDispatcher\Event;
+use Symfony\Contracts\EventDispatcher\Event;
 
 class PrepareRecordEvent extends Event
 {

@@ -45,7 +45,7 @@ class FastSearchController extends AbstractController
         $all = count($records);
 
         $event = new BeforeViewEvent($records, $key, $entityInfos[$key], $content);
-        $this->dispatcher->dispatch(NetlivaFastSearchEvents::BEFORE_FILTER, $event);
+        $this->dispatcher->dispatch($event, NetlivaFastSearchEvents::BEFORE_FILTER);
         $records = $event->getRecords();
         
         if ($content && key_exists('filters', $content))
@@ -65,7 +65,7 @@ class FastSearchController extends AbstractController
         $records      = array_slice($records, $limitPerPage * ($page - 1), $limitPerPage);
 
         $event = new BeforeViewEvent($records, $key, $entityInfos[$key], $content);
-        $this->dispatcher->dispatch(NetlivaFastSearchEvents::BEFORE_VIEW, $event);
+        $this->dispatcher->dispatch($event, NetlivaFastSearchEvents::BEFORE_VIEW);
 
 
         return new JsonResponse(['records'=>$event->getRecords(), 'loaded' => $limitPerPage * $page, 'total' => $total, 'all_count' => $all, 'error'=>false]);

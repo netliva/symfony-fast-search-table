@@ -397,7 +397,7 @@ class FastSearchServices extends AbstractExtension
 
             $eventDispatcher = $this->container->get('event_dispatcher');
             $event = new PrepareRecordEvent($entity, $fKey, $fields, $entityKey, $temp[$fKey]??null);
-            $eventDispatcher->dispatch(NetlivaFastSearchEvents::PREPARE_RECORD, $event);
+            $eventDispatcher->dispatch($event, NetlivaFastSearchEvents::PREPARE_RECORD);
 
             $temp[$fKey] = $event->getValue();
         }
