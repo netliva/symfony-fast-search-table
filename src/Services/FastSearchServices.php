@@ -67,16 +67,30 @@ class FastSearchServices extends AbstractExtension
         ]);
 	}
 
-    public function addWhereToQuery (QueryBuilder $qb, $wheres)
+    public function addWhereToQuery (QueryBuilder $qb, $entityInfo)
     {
-        // Kayıt limitleme var ise - belli bir tarihten önceki kayıtları işleme alma
-        if (count($wheres))
+        $main_alias = $entityInfo['alias']?:'ent';
+        if (!is_null($entityInfo['joins']) && is_array($entityInfo['joins']) && count($entityInfo['joins']))
         {
-            foreach ($wheres as $key=>$whereInfo)
+            foreach ($entityInfo['joins'] as $join)
             {
+                if (!!$join['is_left']) $qb->leftJoin($join['table'], $join['alias']);
+                else $qb->join($join['table'], $join['alias']);
+            }
+        }
+
+        // Kayıt limitleme var ise - belli bir tarihten önceki kayıtları işleme alma
+        if (count($entityInfo['where']))
+        {
+            foreach ($entityInfo['where'] as $key => $whereInfo)
+            {
+                $field = $whereInfo['field'];
+                if (strpos($field, '.') === false) {
+                    $field = $main_alias.'.'.$whereInfo['field'];
+                }
                 if (is_null($whereInfo['value']))
                 {
-                    $qb->andWhere($qb->expr()->{$whereInfo['expr']}('ent.'.$whereInfo['field']));
+                    $qb->andWhere($qb->expr()->{$whereInfo['expr']}($field));
                 }
                 else
                 {
@@ -85,7 +99,7 @@ class FastSearchServices extends AbstractExtension
                         case 'date' : $value = (new \DateTime($whereInfo['value']))->setTime(0,0,0); break;
                         default : $value = $whereInfo['value']; break;
                     }
-                    $qb->andWhere($qb->expr()->{$whereInfo['expr']}('ent.'.$whereInfo['field'], ':whr'.$key));
+                    $qb->andWhere($qb->expr()->{$whereInfo['expr']}($field, ':whr'.$key));
                     $qb->setParameter('whr'.$key, $value);
                 }
             }

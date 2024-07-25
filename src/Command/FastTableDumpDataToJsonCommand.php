@@ -77,10 +77,11 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
         /** @var EntityManagerInterface $em */
         $em = $this->getContainer()->get('doctrine')->getManager();
 
+        $main_alias = $entityInfos[$entKey]['alias']?:'ent';
         $qb = $em->createQueryBuilder();
-        $qb->select('count(ent.id)');
-        $qb->from($entityInfos[$entKey]['class'],'ent');
-        $fss->addWhereToQuery($qb, $entityInfos[$entKey]['where']);
+        $qb->select('count('.$main_alias.'.id)');
+        $qb->from($entityInfos[$entKey]['class'],$main_alias);
+        $fss->addWhereToQuery($qb, $entityInfos[$entKey]);
 
         $count = $qb->getQuery()->getSingleScalarResult();
 
@@ -97,10 +98,10 @@ class FastTableDumpDataToJsonCommand extends ContainerAwareCommand
         for ($i = 0; $i<ceil($count/$limit); $i++)
         {
             $em->clear();
-            $qb = $em->getRepository($entityInfos[$entKey]['class'])->createQueryBuilder('ent');
+            $qb = $em->getRepository($entityInfos[$entKey]['class'])->createQueryBuilder($main_alias);
             $qb->setMaxResults($limit);
             $qb->setFirstResult($i*$limit);
-            $fss->addWhereToQuery($qb, $entityInfos[$entKey]['where']);
+            $fss->addWhereToQuery($qb, $entityInfos[$entKey]);
             $query = $qb->getQuery();
             // $query->setHint(Query::HINT_FORCE_PARTIAL_LOAD, true);
             foreach ($query->getResult() as $entity)
