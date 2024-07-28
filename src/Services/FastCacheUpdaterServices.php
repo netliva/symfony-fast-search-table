@@ -40,7 +40,7 @@ class FastCacheUpdaterServices
     }
     public function addData ($entity)
     {
-        if (get_class($entity) == $this->entityInfo['class'])
+        if ($entity instanceof $this->entityInfo['class'])
         {
             $this->data[] = $this->fss->getEntObj($entity, $this->entityInfo['fields'], $this->entityKey);
             $this->dataChanged = true;
@@ -48,7 +48,7 @@ class FastCacheUpdaterServices
     }
     public function updateData ($entity)
     {
-        if (get_class($entity) == $this->entityInfo['class'])
+        if ($entity instanceof $this->entityInfo['class'])
         {
             $this->data = $this->fss->sort($this->data, 'id');
             $key  = $this->fss->binarySearch($this->data, $entity->getId(), 'id', 'strcmp', count($this->data) - 1, 0, true);
@@ -61,7 +61,7 @@ class FastCacheUpdaterServices
     }
     public function removeData ($entity)
     {
-        if (get_class($entity) == $this->entityInfo['class'])
+        if ($entity instanceof $this->entityInfo['class'])
         {
             $this->data = $this->fss->sort($this->data, 'id');
             $key  = $this->fss->binarySearch($this->data, $entity->getId(), 'id', 'strcmp', count($this->data) - 1, 0, true);
