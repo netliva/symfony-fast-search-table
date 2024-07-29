@@ -165,6 +165,8 @@ class FastSearchServices extends AbstractExtension
                         else $recValue = $record[$field];
 
 
+                        if ($filterData[$fKey]['type'] == 'text' || $filterData[$fKey]['type'] == 'hidden')
+                            $filterValue = trim($filterValue);
 
                         if (
                             (
