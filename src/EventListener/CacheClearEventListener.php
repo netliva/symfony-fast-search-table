@@ -43,7 +43,7 @@ class CacheClearEventListener
                 if (!$this->fcu->openData($entKey, $entInfo))
                     continue;
 
-                if (get_class($entity) == $entInfo['class'])
+                if ($entity instanceof $entInfo['class'])
                 {
                     switch ($action) {
                         case 'persist': $this->fcu->addData($entity); break;

@@ -95,6 +95,8 @@ class FastSearchController extends AbstractController
                 $info = null;
         }
 
+        $main_alias = $entityInfos[$key]['alias']?:'ent';
+
         if ($info)
         {
             // eğer kayıt oluşturma işlemi daha önce başlatılmış ve devam ediyorsa, ve üzerinden 2 dk geçmemiş ise hata döndür
@@ -117,9 +119,9 @@ class FastSearchController extends AbstractController
             if(file_exists($infoPath)) unlink($infoPath);
 
             $qb = $em->createQueryBuilder();
-            $qb->select('count(ent.id)');
-            $qb->from($entityInfos[$key]['class'],'ent');
-            $this->fss->addWhereToQuery($qb, $entityInfos[$key]['where']);
+            $qb->select('count('.$main_alias.'.id)');
+            $qb->from($entityInfos[$key]['class'], $main_alias);
+            $this->fss->addWhereToQuery($qb, $entityInfos[$key]);
 
             $info = (object)[
                 'count'         => $qb->getQuery()->getSingleScalarResult(),
@@ -137,10 +139,10 @@ class FastSearchController extends AbstractController
 
         if ($info->offset == 0) fwrite($dataFile, "[".PHP_EOL);
 
-        $qb = $em->getRepository($entityInfos[$key]['class'])->createQueryBuilder('ent');
+        $qb = $em->getRepository($entityInfos[$key]['class'])->createQueryBuilder($main_alias);
         $qb->setMaxResults($limit);
         $qb->setFirstResult($info->offset);
-        $this->fss->addWhereToQuery($qb, $entityInfos[$key]['where']);
+        $this->fss->addWhereToQuery($qb, $entityInfos[$key]);
         $query = $qb->getQuery();
         // $query->setHint(Query::HINT_FORCE_PARTIAL_LOAD, true);
         $say = $info->offset;

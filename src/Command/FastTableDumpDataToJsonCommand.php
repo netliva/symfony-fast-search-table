@@ -81,10 +81,11 @@ class FastTableDumpDataToJsonCommand extends Command
         if(file_exists($tempPath))
             unlink($tempPath);
 
+        $main_alias = $entityInfos[$entKey]['alias']?:'ent';
         $qb = $this->em->createQueryBuilder();
-        $qb->select('count(ent.id)');
-        $qb->from($entityInfos[$entKey]['class'],'ent');
-        $this->fss->addWhereToQuery($qb, $entityInfos[$entKey]['where']);
+        $qb->select('count('.$main_alias.'.id)');
+        $qb->from($entityInfos[$entKey]['class'],$main_alias);
+        $this->fss->addWhereToQuery($qb, $entityInfos[$entKey]);
 
         $count = $qb->getQuery()->getSingleScalarResult();
 
@@ -101,10 +102,10 @@ class FastTableDumpDataToJsonCommand extends Command
         for ($i = 0; $i<ceil($count/$limit); $i++)
         {
             $this->em->clear();
-            $qb = $this->em->getRepository($entityInfos[$entKey]['class'])->createQueryBuilder('ent');
+            $qb = $this->em->getRepository($entityInfos[$entKey]['class'])->createQueryBuilder($main_alias);
             $qb->setMaxResults($limit);
             $qb->setFirstResult($i*$limit);
-            $this->fss->addWhereToQuery($qb, $entityInfos[$entKey]['where']);
+            $this->fss->addWhereToQuery($qb, $entityInfos[$entKey]);
             $query = $qb->getQuery();
             // $query->setHint(Query::HINT_FORCE_PARTIAL_LOAD, true);
             foreach ($query->getResult() as $entity)

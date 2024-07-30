@@ -43,7 +43,7 @@ class FastCacheUpdaterServices
         if (is_numeric($entity))
             $entity = $this->em->getRepository($this->entityInfo['class'])->find($entity);
 
-        if ($entity && is_object($entity) && get_class($entity) == $this->entityInfo['class'])
+        if ($entity && is_object($entity) && $entity instanceof $this->entityInfo['class'])
         {
             $this->data[] = $this->fss->getEntObj($entity, $this->entityInfo['fields'], $this->entityKey);
             $this->dataChanged = true;
@@ -54,7 +54,7 @@ class FastCacheUpdaterServices
         if (is_numeric($entity))
             $entity = $this->em->getRepository($this->entityInfo['class'])->find($entity);
 
-        if ($entity && is_object($entity) && get_class($entity) == $this->entityInfo['class'])
+        if ($entity && is_object($entity) && $entity instanceof $this->entityInfo['class'])
         {
             $this->data = $this->fss->sort($this->data, 'id');
             $key  = $this->fss->binarySearch($this->data, $entity->getId(), 'id', 'strcmp', count($this->data) - 1, 0, true);
@@ -70,7 +70,7 @@ class FastCacheUpdaterServices
         if (is_numeric($entity))
             $entity = $this->em->getRepository($this->entityInfo['class'])->find($entity);
 
-        if ($entity && is_object($entity) && get_class($entity) == $this->entityInfo['class'])
+        if ($entity && is_object($entity) && $entity instanceof $this->entityInfo['class'])
         {
             $this->data = $this->fss->sort($this->data, 'id');
             $key  = $this->fss->binarySearch($this->data, $entity->getId(), 'id', 'strcmp', count($this->data) - 1, 0, true);
