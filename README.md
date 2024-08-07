@@ -115,6 +115,7 @@ netliva_symfony_fast_search:
 
       cache_clear: # ilişkili başka entitiy üzerinden bir veri bu tablo için cachlenmiş ise, o entitiyde değişiklik yapıldığında bağlı bu tablodaki veririnin cache'inin temizlenmesi için yapılan tanımlama  
         Crm\DefaultBundle\Entity\OtherEntity: { reverse_fields: [ user ] } # reverse_fields ile diğer tablodan user tablosuna hangi field tanımıyla ulaşıldığı bilgisi tanımlanır. Böylece diğer tablodaki bir veri değiştirildiğinde, bağlantılı user tablolarının cache'i de düzenlenir
+        Crm\DefaultBundle\Entity\AnotherEntity: { clear_all: true } # clear_all true olursa; AnotherEntity'de değişiklik yapıldığında user_table için tüm cachelenen veri silinir.
 
     other_table: # listelenencek diğer tablolar için tanılama yapılmaya devam edilir.
       # ...  

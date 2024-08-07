@@ -91,6 +91,7 @@ class Configuration implements ConfigurationInterface
 								->prototype('array')
 									->children()
                                         ->arrayNode('reverse_fields')->defaultValue([])->prototype('scalar')->end()->end()
+                                        ->booleanNode('clear_all')->defaultValue(false)->end()
 									->end()
 								->end()
 							->end()

@@ -56,8 +56,21 @@ class CacheClearEventListener
                 {
                     if ($entity instanceof $className)
                     {
-                        foreach ($cacheClearInfo['reverse_fields'] as $reversField)
-                            $this->upateCacheByReverseEntities($entity, $reversField);
+                        if ($cacheClearInfo['clear_all'])
+                        {
+                            $cachePath   = $this->container->getParameter('netliva_fast_search.cache_path');
+                            $infoPath = $cachePath.'/'.$entKey.'-info.json';
+                            $tempPath = $cachePath.'/'.$entKey.'-temp.json';
+                            $filePath = $cachePath.'/'.$entKey.'.json';
+                            if(file_exists($infoPath)) unlink($infoPath);
+                            if(file_exists($tempPath)) unlink($tempPath);
+                            if(file_exists($filePath)) unlink($filePath);
+                        }
+                        else
+                        {
+                            foreach ($cacheClearInfo['reverse_fields'] as $reversField)
+                                $this->upateCacheByReverseEntities($entity, $reversField);
+                        }
                     }
                 }
 
