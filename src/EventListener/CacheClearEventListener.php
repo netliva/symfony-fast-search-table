@@ -3,6 +3,7 @@
 namespace Netliva\SymfonyFastSearchBundle\EventListener;
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\Query;
@@ -12,12 +13,14 @@ class CacheClearEventListener
 {
     private $container;
     private $fss;
+    private $em;
 
-    public function __construct (ContainerInterface $container)
+    public function __construct (ContainerInterface $container, EntityManager $em)
     {
         $this->container = $container;
         $this->fss       = $this->container->get('netliva_fastSearchServices');
         $this->fcu       = $this->container->get('netliva_fastCacheUpdater');
+        $this->em        = $em;
     }
 
     public function postPersist(LifecycleEventArgs $args)
@@ -48,7 +51,25 @@ class CacheClearEventListener
                 if ($entity instanceof $entInfo['class'])
                 {
                     switch ($action) {
-                        case 'persist': $this->fcu->addData($entity); break;
+                        case 'persist':
+                            $add = true;
+                            if (count($entInfo['where']))
+                            {
+                                $add = false;
+
+                                $main_alias = $entInfo['alias']?:'ent';
+                                $qb = $this->em->createQueryBuilder();
+                                $qb->select($main_alias.'.id');
+                                $qb->from($entInfo['class'], $main_alias);
+                                $this->fss->addWhereToQuery($qb, $entInfo);
+                                $qb->andWhere($qb->expr()->eq($main_alias.'.id', $entity->getId()));
+                                $result = $qb->getQuery()->getOneOrNullResult();
+                                if ($result)
+                                    $add = true;
+                            }
+
+                            if($add) $this->fcu->addData($entity);
+                            break;
                         case 'update': $this->fcu->updateData($entity); break;
                         case 'remove': $this->fcu->removeData($entity); break;
                     }
