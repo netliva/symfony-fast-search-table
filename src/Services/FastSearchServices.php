@@ -198,7 +198,7 @@ class FastSearchServices extends AbstractExtension
                                     ) || (
                                         $filterData[$fKey]['exp'] == 'date_gt' && (bool)strtotime($recValue) && (bool)strtotime($filterValue) && new \DateTime($recValue) > new \DateTime($filterValue)
                                     ) || (
-                                        $filterData[$fKey]['exp'] == 'in' &&  in_array($filterValue, $recValue)
+                                        $filterData[$fKey]['exp'] == 'in' && is_array($recValue) && in_array($filterValue, $recValue)
                                     ) || (
                                         $filterData[$fKey]['exp'] == 'isNull' && (($filterValue && is_null($recValue)) || (!$filterValue && !is_null($recValue)))
                                     ) || (
