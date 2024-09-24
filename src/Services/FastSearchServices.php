@@ -204,6 +204,14 @@ class FastSearchServices extends AbstractExtension
                                             mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $filterValue)),
                                             0, "utf-8") !== false
                                     ) || (
+                                        $filterData[$fKey]['exp'] == 'eq' && $filterValue == 'isNull' && is_null($recValue)
+                                    ) || (
+                                        $filterData[$fKey]['exp'] == 'eq' && $filterValue == 'isNotNull' && !is_null($recValue)
+                                    ) || (
+                                        $filterData[$fKey]['exp'] == 'eq' && $filterValue == 'isTrue' && !!$recValue
+                                    ) || (
+                                        $filterData[$fKey]['exp'] == 'eq' && $filterValue == 'isFalse' && !$recValue
+                                    ) || (
                                         $filterData[$fKey]['exp'] == 'eq' && $recValue == $filterValue
                                     ) || (
                                         $filterData[$fKey]['exp'] == 'neq' && $recValue != $filterValue
