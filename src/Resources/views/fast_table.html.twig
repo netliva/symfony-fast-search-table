@@ -2,7 +2,7 @@
 	<form class="d-flex align-items-center justify-content-center pad10A p-3" @submit="postFilter">
 		{% for filterKey, filterInfo in entityInfos.filters %}
 			{% if filterInfo.type == 'hidden' %}
-				<input type="hidden" v-model="filter_form.{{ filterKey }}">
+				<div id="fastTableApp_{{ key }}_filter_{{ filterKey }}"><input type="hidden" v-model="filter_form.{{ filterKey }}"></div>
 			{% else %}
 				<div id="fastTableApp_{{ key }}_filter_{{ filterKey }}" class="fast_table_filter_item d-flex align-items-center justify-content-center">
 					<strong class="nowrap">{{ filterInfo.title }} :</strong>
