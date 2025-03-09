@@ -17,12 +17,29 @@ use Twig\TwigFunction;
 
 class FastSearchServices extends AbstractExtension
 {
+	private bool $isEnabled = true;
+
 	public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly Environment $environment,
         private readonly RouterInterface $router,
         private readonly ContainerInterface $container
     ){ }
+
+	public function disable(): void
+	{
+		$this->isEnabled = false;
+	}
+
+	public function enable(): void
+	{
+		$this->isEnabled = true;
+	}
+
+	public function isEnabled(): bool
+	{
+		return $this->isEnabled;
+	}
 
 	public function getFunctions()
 	{

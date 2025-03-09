@@ -33,6 +33,11 @@ class CacheClearEventListener
 
     private function controlAndClearCache (string $action, LifecycleEventArgs $args)
     {
+        // Cache devre dışı ise hiçbir işlem yapma
+        if (!$this->fss->isEnabled()) {
+            return;
+        }
+
         $nfsEntities = $this->container->getParameter('netliva_fast_search.entities');
         $entity      = $args->getObject();
 
