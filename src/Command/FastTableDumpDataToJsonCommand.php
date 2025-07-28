@@ -24,7 +24,7 @@ class FastTableDumpDataToJsonCommand extends Command
     }
 
 
-    protected function configure()
+    protected function configure(): void
     {
         // Her saba saat 5'te cron çalışıyor
         $this
@@ -35,7 +35,7 @@ class FastTableDumpDataToJsonCommand extends Command
     }
 
 
-    protected function interact (InputInterface $input, OutputInterface $output)
+    protected function interact (InputInterface $input, OutputInterface $output): void
     {
         if (null === $input->getArgument('entity-name'))
         {
@@ -64,7 +64,7 @@ class FastTableDumpDataToJsonCommand extends Command
 
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $entKey = $input->getArgument('entity-name');
         $limit  = $input->getOption('limit');

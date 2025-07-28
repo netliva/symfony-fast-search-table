@@ -41,13 +41,13 @@ class FastSearchServices extends AbstractExtension
 		return $this->isEnabled;
 	}
 
-	public function getFunctions()
+	public function getFunctions(): array
 	{
 		return array(
 			new TwigFunction('get_fast_search_table', [$this, 'getFastSearchTable'], ['is_safe'=>['html']]),
 		);
 	}
-	public function getFilters()
+	public function getFilters(): array
 	{
 		return array(
 			new TwigFilter('count_of_th', [$this, 'countOfTh']),
