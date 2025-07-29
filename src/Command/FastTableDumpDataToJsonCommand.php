@@ -13,6 +13,7 @@ use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+#[\Symfony\Component\Console\Attribute\AsCommand(name: 'netliva:fast_table:dump_to_json', description: 'Hızlı tablo için verileri json olarak kaydeder')]
 class FastTableDumpDataToJsonCommand extends Command
 {
     public function __construct (
@@ -28,10 +29,8 @@ class FastTableDumpDataToJsonCommand extends Command
     {
         // Her saba saat 5'te cron çalışıyor
         $this
-            ->setName('netliva:fast_table:dump_to_json')
             ->addArgument('entity-name', InputArgument::OPTIONAL, 'Oluşturulacak mülke ait tanım bilgisi')
-            ->addOption('limit', 'l', InputArgument::OPTIONAL, 'Her bir sorgunun getireceği kayıt sayısı')
-            ->setDescription('Hızlı tablo için verileri json olarak kaydeder');
+            ->addOption('limit', 'l', InputArgument::OPTIONAL, 'Her bir sorgunun getireceği kayıt sayısı');
     }
 
 
@@ -137,6 +136,7 @@ class FastTableDumpDataToJsonCommand extends Command
         $io->newLine();
         $output->writeln('Başarıyla Kaydedildi');
 
+        return 0;
     }
 
 }

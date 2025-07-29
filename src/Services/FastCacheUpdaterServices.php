@@ -81,12 +81,12 @@ class FastCacheUpdaterServices
             }
         }
     }
-    public function saveData ()
+    public function saveData (): void
     {
         if ($this->dataChanged)
         {
             if(!file_exists($this->filePath))
-                return false;
+                return;
 
             file_put_contents($this->filePath, json_encode($this->data));
         }

@@ -3,7 +3,6 @@
 namespace Netliva\SymfonyFastSearchBundle\Services;
 
 
-use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Netliva\SymfonyFastSearchBundle\Events\NetlivaFastSearchEvents;
 use Netliva\SymfonyFastSearchBundle\Events\PrepareRecordEvent;
@@ -11,7 +10,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Routing\RouterInterface;
 use Twig\Environment;
 use Twig\Extension\AbstractExtension;
-use Twig\Markup;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
 
@@ -20,7 +18,6 @@ class FastSearchServices extends AbstractExtension
 	private bool $isEnabled = true;
 
 	public function __construct(
-        private readonly EntityManagerInterface $em,
         private readonly Environment $environment,
         private readonly RouterInterface $router,
         private readonly ContainerInterface $container
@@ -44,13 +41,13 @@ class FastSearchServices extends AbstractExtension
 	public function getFunctions(): array
 	{
 		return array(
-			new TwigFunction('get_fast_search_table', [$this, 'getFastSearchTable'], ['is_safe'=>['html']]),
+			new TwigFunction('get_fast_search_table', $this->getFastSearchTable(...), ['is_safe'=>['html']]),
 		);
 	}
 	public function getFilters(): array
 	{
 		return array(
-			new TwigFilter('count_of_th', [$this, 'countOfTh']),
+			new TwigFilter('count_of_th', $this->countOfTh(...)),
 		);
 	}
 
@@ -144,13 +141,15 @@ class FastSearchServices extends AbstractExtension
         {
             foreach ($filter as $fKey => $filterValue)
             {
+                $fromDate = null;
+                $toDate = null;
                 if($filterData[$fKey]['type'] == 'date_range')
                 {
                     $fromDate = $filterValue['from']??null;
                     $toDate = $filterValue['to']??null;
                 }
                 if (
-                    key_exists($fKey, $filterData)
+                    array_key_exists($fKey, $filterData)
                     && (
                         (is_string($filterValue) && mb_strlen($filterValue)>0)
                         || is_numeric($filterValue)
@@ -172,7 +171,7 @@ class FastSearchServices extends AbstractExtension
                                 $recValue = array_map(function($item) use ($matches){
                                     foreach (explode('.', $matches[2]) as $keys)
                                     {
-                                        if (is_array($item) && key_exists($keys, $item))
+                                        if (is_array($item) && array_key_exists($keys, $item))
                                             $item = $item[$keys];
                                         else
                                             $item = null;
@@ -187,7 +186,7 @@ class FastSearchServices extends AbstractExtension
                             $recValue = $record[$matches[1]];
                             foreach (explode('.', $matches[2]) as $item)
                             {
-                                if (is_array($recValue) && key_exists($item, $recValue))
+                                if (is_array($recValue) && array_key_exists($item, $recValue))
                                     $recValue = $recValue[$item];
                                 else
                                     $recValue = null;
@@ -307,12 +306,12 @@ class FastSearchServices extends AbstractExtension
                 $bVal = $b[$matches[1]];
                 foreach (explode('.', $matches[2]) as $item)
                 {
-                    if (is_array($aVal) && key_exists($item, $aVal))
+                    if (is_array($aVal) && array_key_exists($item, $aVal))
                         $aVal = $aVal[$item];
                     elseif ($item == 'length' && is_array($aVal))
                         $aVal = count($aVal);
 
-                    if (is_array($bVal) && key_exists($item, $bVal))
+                    if (is_array($bVal) && array_key_exists($item, $bVal))
                         $bVal = $bVal[$item];
                     elseif ($item == 'length' && is_array($bVal))
                         $bVal = count($bVal);
@@ -411,7 +410,7 @@ class FastSearchServices extends AbstractExtension
         if (is_object($entity) && method_exists($entity, $field))
             return $entity->{$field}();
 
-        if (is_array($entity) && key_exists($field, $entity))
+        if (is_array($entity) && array_key_exists($field, $entity))
             return $entity[$field];
 
         return null;

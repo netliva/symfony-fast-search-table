@@ -18,20 +18,20 @@ class CacheClearEventListener
         private readonly FastCacheUpdaterServices $fcu
     ) { }
 
-    public function postPersist(LifecycleEventArgs $args)
+    public function postPersist(\Doctrine\ORM\Event\PostPersistEventArgs $args)
     {
         $this->controlAndClearCache('persist', $args);
     }
-    public function postUpdate(LifecycleEventArgs $args)
+    public function postUpdate(\Doctrine\ORM\Event\PostUpdateEventArgs $args)
     {
         $this->controlAndClearCache('update', $args);
     }
-    public function preRemove(LifecycleEventArgs $args)
+    public function preRemove(\Doctrine\ORM\Event\PreRemoveEventArgs $args)
     {
         $this->controlAndClearCache('remove', $args);
     }
 
-    private function controlAndClearCache (string $action, LifecycleEventArgs $args)
+    private function controlAndClearCache (string $action, \Doctrine\Persistence\Event\LifecycleEventArgs $args)
     {
         // Cache devre dışı ise hiçbir işlem yapma
         if (!$this->fss->isEnabled()) {

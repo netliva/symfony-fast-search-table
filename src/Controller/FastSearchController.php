@@ -2,6 +2,7 @@
 
 namespace Netliva\SymfonyFastSearchBundle\Controller;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query;
 use Netliva\SymfonyFastSearchBundle\Events\BeforeViewEvent;
 use Netliva\SymfonyFastSearchBundle\Events\NetlivaFastSearchEvents;
@@ -16,19 +17,18 @@ class FastSearchController extends AbstractController
 {
     public function __construct (
         private readonly FastSearchServices $fss,
-        private readonly EventDispatcherInterface $dispatcher
+        private readonly EventDispatcherInterface $dispatcher,
+        private readonly \Doctrine\Persistence\ManagerRegistry $managerRegistry
     ) { }
 
-    /**
-     * @Route("/list/{key}/{page}", name="netliva_fast_search_list", defaults={"page": 1})
-     */
+    #[Route(path: '/list/{key}/{page}', name: 'netliva_fast_search_list', defaults: ['page' => 1])]
     public function listAction (Request $request, $key, $page)
     {
         $entityInfos  = $this->getParameter('netliva_fast_search.entities');
         $cachePath    = $this->getParameter('netliva_fast_search.cache_path');
         $limitPerPage = $this->getParameter('netliva_fast_search.default_limit_per_page');
 
-        if (!key_exists($key, $entityInfos))
+        if (!array_key_exists($key, $entityInfos))
             return new JsonResponse(['records'=>[], 'loaded' => 0, 'total' => 0, 'all_count' => 0, 'error' => 'key_not_found']);
 
         $filePath = $cachePath.'/'.$key.'.json';
@@ -48,7 +48,7 @@ class FastSearchController extends AbstractController
         $this->dispatcher->dispatch($event, NetlivaFastSearchEvents::BEFORE_FILTER);
         $records = $event->getRecords();
         
-        if ($content && key_exists('filters', $content))
+        if ($content && array_key_exists('filters', $content))
         {
             $records = $this->fss->filterRecords(
                 $records,
@@ -58,7 +58,7 @@ class FastSearchController extends AbstractController
             $all -= $this->fss->getRecordCountsForDecreaseFromTotalCount();
         }
 
-        if ($content && key_exists('sort_field', $content) && key_exists('sort_direction', $content))
+        if ($content && array_key_exists('sort_field', $content) && array_key_exists('sort_direction', $content))
             $records = $this->fss->sort($records, $content['sort_field'], $content['sort_direction']);
 
         $total        = count($records);
@@ -72,16 +72,14 @@ class FastSearchController extends AbstractController
     }
 
 
-    /**
-     * @Route("/remove_cache/{key}/{force}", name="netliva_fast_search_remove_cache", defaults={"force": false})
-     */
+    #[Route(path: '/remove_cache/{key}/{force}', name: 'netliva_fast_search_remove_cache', defaults: ['force' => false])]
     public function removeCacheAction ($key, $force)
     {
         $entityInfos = $this->getParameter('netliva_fast_search.entities');
         $cachePath   = $this->getParameter('netliva_fast_search.cache_path');
 
         /** @var EntityManagerInterface $em */
-        $em = $this->getDoctrine()->getManager();
+        $em = $this->managerRegistry->getManager();
 
         $infoPath = $cachePath.'/'.$key.'-info.json';
         $tempPath = $cachePath.'/'.$key.'-temp.json';
@@ -151,7 +149,7 @@ class FastSearchController extends AbstractController
             $say++;
             $data = $this->fss->getEntObj($entity, $entityInfos[$key]['fields'], $key);
             unset($entity);
-            fputs($dataFile, json_encode($data).($say==$info->count?'':',').PHP_EOL);
+            fwrite($dataFile, json_encode($data).($say==$info->count?'':',').PHP_EOL);
             unset($data);
         }
 
@@ -162,7 +160,7 @@ class FastSearchController extends AbstractController
         // kayıtlar bitti
         if ($info->offset >= $info->count)
         {
-            fputs($dataFile, "]");
+            fwrite($dataFile, "]");
             fclose($dataFile);
 
             if(file_exists($tempPath))
