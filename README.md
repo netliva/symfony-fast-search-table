@@ -1,4 +1,4 @@
-# Symfony Fast Search Table
+# Symfony Fast Search Table - Symfony 4 desteği
 **Symfony için cache yapılı filtrelemeli tablo listeleme yapısı.**
 
 Bu sistem listelemeyi direk veri tabanından topluca veri çekerek yapmak yerine, daha hızlı listeleme yapmak için; verileri cache dosyasında tutup, sayfa içi soruglar ile listelemeyi en hızlı şekilde yapabilmeyi amaçlamaktadır.
