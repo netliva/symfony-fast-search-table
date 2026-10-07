@@ -45,6 +45,11 @@ class CacheClearEventListener
         {
             foreach ($nfsEntities as $entKey => $entInfo)
             {
+                // openData önbellek dosyasının tamamını okuyup çözer; listeyle ilgisi olmayan
+                // bir entity (ör. her istekte yazılan log kaydı) için dosyaya hiç dokunma.
+                if (!$this->isRelatedEntity($entity, $entInfo))
+                    continue;
+
                 if (!$this->fcu->openData($entKey, $entInfo))
                     continue;
 
@@ -86,6 +91,20 @@ class CacheClearEventListener
 
     }
 
+
+    private function isRelatedEntity($entity, array $entInfo): bool
+    {
+        if ($entity instanceof $entInfo['class'])
+            return true;
+
+        foreach ($entInfo['cache_clear'] as $className => $cacheClearInfo)
+        {
+            if ($entity instanceof $className)
+                return true;
+        }
+
+        return false;
+    }
 
     private function upateCacheByReverseEntities($entity, $field): void
     {
