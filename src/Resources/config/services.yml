@@ -21,3 +21,4 @@ services:
             - { name: 'doctrine.event_listener', event: 'postPersist', connection: 'default' }
             - { name: 'doctrine.event_listener', event: 'postUpdate', connection: 'default' }
             - { name: 'doctrine.event_listener', event: 'preRemove', connection: 'default' }
+            - { name: 'doctrine.event_listener', event: 'postFlush', connection: 'default' }
