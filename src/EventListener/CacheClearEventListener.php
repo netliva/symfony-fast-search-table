@@ -31,6 +31,13 @@ class CacheClearEventListener
         $this->controlAndClearCache('remove', $args);
     }
 
+    public function postFlush(\Doctrine\ORM\Event\PostFlushEventArgs $args): void
+    {
+        // Kuyruğa yalnız önbellek etkinken yazılır; burada ayrıca denetlenmez, yoksa etkinken
+        // kuyruğa girip flush anında devre dışı kalan değişiklikler sonraki bir flush'a sarkardı.
+        $this->fcu->saveAll();
+    }
+
     private function controlAndClearCache (string $action, \Doctrine\Persistence\Event\LifecycleEventArgs $args)
     {
         // Cache devre dışı ise hiçbir işlem yapma
@@ -84,7 +91,8 @@ class CacheClearEventListener
                     }
                 }
 
-                $this->fcu->saveData();
+                // Dosyaya yazma postFlush'a bırakılır: bir flush'ta kaç kayıt değişirse değişsin
+                // her liste bir kez okunur ve bir kez yazılır.
             }
 
         }
